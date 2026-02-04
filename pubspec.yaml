@@ -1,0 +1,57 @@
+name: zaman_yonetimi
+description: "Zaman Yönetimi ve Üretkenlik Uygulaması"
+publish_to: 'none'
+version: 1.0.0+3
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State Management - Riverpod
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+  
+  # Local Storage
+  hive_flutter: ^1.1.0
+  shared_preferences: ^2.2.3
+  
+  # Navigation
+  go_router: ^14.2.7
+  
+  # Utilities
+  intl: ^0.19.0
+  uuid: ^4.4.2
+  
+  # UI
+  cupertino_icons: ^1.0.8
+  table_calendar: ^3.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  
+  # Code Generation
+  build_runner: ^2.4.11
+  riverpod_generator: ^2.4.0
+  hive_generator: ^2.0.1
+  
+  # App Icon Generator
+  flutter_launcher_icons: ^0.14.1
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icon/app_icon.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#0F172A"
+  adaptive_icon_foreground: "assets/icon/app_icon.png"
+  web:
+    generate: false
+
+flutter:
+  uses-material-design: true
+

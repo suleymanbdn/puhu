@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Zaman Yönetici Uygulaması Gizlilik Politikası">
+    <title>Gizlilik Politikası - Zaman Yönetici</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.8;
+            color: #333;
+            background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            animation: fadeIn 0.6s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+            color: white;
+            padding: 60px 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.95;
+        }
+
+        .content {
+            padding: 50px 40px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            animation: slideIn 0.5s ease-out forwards;
+            opacity: 0;
+        }
+
+        .section:nth-child(1) { animation-delay: 0.1s; }
+        .section:nth-child(2) { animation-delay: 0.2s; }
+        .section:nth-child(3) { animation-delay: 0.3s; }
+        .section:nth-child(4) { animation-delay: 0.4s; }
+        .section:nth-child(5) { animation-delay: 0.5s; }
+        .section:nth-child(6) { animation-delay: 0.6s; }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .section h2 {
+            color: #6366F1;
+            font-size: 1.8em;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #6366F1;
+            display: inline-block;
+        }
+
+        .section h3 {
+            color: #8B5CF6;
+            font-size: 1.3em;
+            margin-top: 25px;
+            margin-bottom: 10px;
+        }
+
+        .section p {
+            margin-bottom: 15px;
+            color: #555;
+            text-align: justify;
+        }
+
+        .section ul {
+            margin-left: 30px;
+            margin-bottom: 15px;
+        }
+
+        .section li {
+            margin-bottom: 10px;
+            color: #555;
+            position: relative;
+            padding-left: 10px;
+        }
+
+        .section li::before {
+            content: "▸";
+            position: absolute;
+            left: -20px;
+            color: #6366F1;
+            font-weight: bold;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 25px;
+            border-radius: 12px;
+            margin: 20px 0;
+            border-left: 5px solid #6366F1;
+        }
+
+        .highlight-box p {
+            margin-bottom: 0;
+        }
+
+        .contact-box {
+            background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin: 30px 0;
+            text-align: center;
+        }
+
+        .contact-box h3 {
+            color: white;
+            margin-bottom: 15px;
+        }
+
+        .contact-box a {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            border-bottom: 2px solid white;
+            padding-bottom: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .contact-box a:hover {
+            opacity: 0.8;
+            border-bottom: 2px solid transparent;
+        }
+
+        .footer {
+            background: #f8f9fa;
+            padding: 30px 40px;
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .date {
+            color: #8B5CF6;
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 20px auto;
+                border-radius: 15px;
+            }
+
+            .header {
+                padding: 40px 25px;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .content {
+                padding: 30px 25px;
+            }
+
+            .section h2 {
+                font-size: 1.5em;
+            }
+
+            .footer {
+                padding: 20px 25px;
+            }
+        }
+
+        .icon {
+            display: inline-block;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔒 Gizlilik Politikası</h1>
+            <p>Zaman Yönetici - Üretkenlik Uygulaması</p>
+        </div>
+
+        <div class="content">
+            <div class="section">
+                <div class="highlight-box">
+                    <p><strong>Son Güncelleme:</strong> <span class="date">28 Ocak 2026</span></p>
+                    <p>Bu gizlilik politikası, Zaman Yönetici uygulamasının kullanıcı gizliliğine verdiği önemi açıklamaktadır.</p>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2><span class="icon">📱</span>Uygulama Hakkında</h2>
+                <p>Zaman Yönetici, kullanıcılarına görev yönetimi, pomodoro zamanlayıcı, zaman bütçeleme ve istatistik özellikleri sunan ücretsiz bir mobil uygulamadır. Üretkenliğinizi artırmanız ve zamanınızı daha verimli kullanmanız için tasarlanmıştır.</p>
+            </div>
+
+            <div class="section">
+                <h2><span class="icon">🔐</span>Toplanan Bilgiler</h2>
+                <p>Uygulamamız gizliliğinize önem verir ve <strong>hiçbir kişisel bilginizi toplamaz, saklamaz veya üçüncü taraflarla paylaşmaz</strong>.</p>
+                
+                <h3>Yerel Veri Depolama</h3>
+                <p>Aşağıdaki veriler yalnızca <strong>cihazınızda yerel olarak</strong> saklanır ve asla sunucularımıza veya üçüncü taraf servislere gönderilmez:</p>
+                <ul>
+                    <li><strong>Görev Kayıtları:</strong> Oluşturduğunuz görevler, kategoriler ve öncelikler</li>
+                    <li><strong>Odak Oturumları:</strong> Pomodoro zamanlayıcı ile gerçekleştirdiğiniz odaklanma seansları</li>
+                    <li><strong>Zaman Bütçeleri:</strong> Kategoriler için belirlediğiniz haftalık zaman hedefleri</li>
+                    <li><strong>Kullanıcı Hesabı:</strong> Uygulama içinde oluşturduğunuz kullanıcı adı ve şifre (sadece yerel kimlik doğrulama için)</li>
+                    <li><strong>Uygulama Ayarları:</strong> Tema tercihleri (açık/koyu mod) ve diğer kullanıcı ayarları</li>
+                </ul>
+                <p>Bu veriler tamamen cihazınızda kalır ve istediğiniz zaman uygulamayı silerek tüm verileri tamamen kaldırabilirsiniz.</p>
+            </div>
+
+            <div class="section">
+                <h2><span class="icon">🌐</span>İnternet Bağlantısı</h2>
+                <p>Uygulamamız <strong>internet bağlantısı gerektirmez</strong> ve tamamen çevrimdışı çalışır. Tüm özellikler internet olmadan kullanılabilir:</p>
+                <ul>
+                    <li>Görev oluşturma ve yönetimi</li>
+                    <li>Pomodoro zamanlayıcı</li>
+                    <li>Zaman bütçeleme ve takibi</li>
+                    <li>İstatistikler ve raporlar</li>
+                </ul>
+                <p>Hiçbir veri internete gönderilmez ve dış servislere bağımlı değilsiniz.</p>
+            </div>
+
+            <div class="section">
+                <h2><span class="icon">🛡️</span>Veri Güvenliği</h2>
+                <p>Uygulamanız tarafından yerel olarak saklanan tüm veriler, cihazınızın işletim sistemi güvenlik önlemleri ile korunmaktadır. Bu veriler:</p>
+                <ul>
+                    <li>Hive veritabanı kullanılarak güvenli bir şekilde saklanır</li>
+                    <li>Sadece uygulama tarafından erişilebilir</li>
+                    <li>Başka uygulamalar tarafından okunamaz</li>
+                    <li>Sunucularımıza veya üçüncü taraflara asla gönderilmez</li>
+                    <li>Kullanıcı şifreleri hash'lenerek saklanır</li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <h2><span class="icon">👤</span>Üçüncü Taraf Servisler</h2>
+                <p>Uygulamamız <strong>hiçbir üçüncü taraf servis kullanmaz</strong>. Reklam yok, analitik yok, takip yok. Tamamen bağımsız ve gizlilik odaklı bir uygulamadır.</p>
+            </div>
+
+            <div class="section">
+                <h2><span class="icon">🔄</span>Çocukların Gizliliği</h2>
+                <p>Uygulamamız 13 yaş altı çocukları hedeflemez ve bilinçli olarak bu yaş grubundan kişisel bilgi toplamaz. Herhangi bir kişisel veri toplamadığımız için, tüm yaş grupları uygulamamızı güvenle kullanabilir.</p>
+            </div>
+
+            <div class="section">
+                <h2><span class="icon">📊</span>Veri Yedekleme</h2>
+                <p>Verileriniz yalnızca cihazınızda saklanır. Uygulama şu anda bulut yedekleme özelliği sunmamaktadır. Cihazınızı sıfırladığınızda veya uygulamayı sildiğinizde, tüm verileriniz kaybolacaktır. Düzenli olarak cihaz yedeği almanızı öneririz.</p>
+            </div>
+
+            <div class="section">
+                <h2><span class="icon">📝</span>Gizlilik Politikası Değişiklikleri</h2>
+                <p>Bu gizlilik politikasını zaman zaman güncelleyebiliriz. Herhangi bir değişiklik bu sayfada yayınlanacak ve "Son Güncelleme" tarihi güncellenecektir. Önemli değişiklikler olduğunda uygulama içinde bildirim yapılacaktır.</p>
+            </div>
+
+            <div class="section">
+                <h2><span class="icon">⚖️</span>Yasal Haklar</h2>
+                <p>Hiçbir kişisel veri toplamadığımız için, GDPR, KVKK ve diğer veri koruma yasaları kapsamında herhangi bir veri işleme faaliyeti gerçekleştirmiyoruz. Tüm verileriniz cihazınızda kalır ve tam kontrolünüzdedir.</p>
+            </div>
+
+            <div class="contact-box">
+                <h3>📧 İletişim</h3>
+                <p>Gizlilik politikamız veya uygulamamız hakkında herhangi bir sorunuz varsa, lütfen bizimle iletişime geçin:</p>
+                <p style="margin-top: 15px;">
+                    <strong>E-posta:</strong> <a href="mailto:suleymanbudun09@gmail.com">suleymanbudun09@gmail.com</a>
+                </p>
+                <p style="margin-top: 10px;">
+                    <strong>Geliştirici:</strong> SuBuSoft
+                </p>
+            </div>
+
+            <div class="highlight-box">
+                <p><strong>📌 Özetle:</strong> Zaman Yönetici uygulaması hiçbir kişisel bilginizi toplamaz, saklamaz veya paylaşmaz. Tüm verileriniz cihazınızda güvende kalır ve tam kontrolünüzdedir. İnternet gerektirmez, reklam yok, takip yok, tamamen gizliliğinize saygılıdır.</p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>&copy; 2026 Zaman Yönetici. Tüm hakları saklıdır.</p>
+            <p style="margin-top: 10px;">Bu uygulama SuBuSoft tarafından geliştirilmiştir.</p>
+        </div>
+    </div>
+</body>
+</html>
