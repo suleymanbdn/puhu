@@ -22,13 +22,13 @@ enum TaskCategory {
   String get title {
     switch (this) {
       case TaskCategory.work:
-        return 'İş';
+        return 'Work';
       case TaskCategory.personal:
-        return 'Kişisel';
+        return 'Personal';
       case TaskCategory.study:
-        return 'Eğitim';
+        return 'Education';
       case TaskCategory.health:
-        return 'Sağlık';
+        return 'Health';
     }
   }
 
@@ -77,11 +77,11 @@ enum TaskPriority {
   String get title {
     switch (this) {
       case TaskPriority.low:
-        return 'Düşük';
+        return 'Low';
       case TaskPriority.medium:
-        return 'Orta';
+        return 'Medium';
       case TaskPriority.high:
-        return 'Yüksek';
+        return 'High';
     }
   }
 

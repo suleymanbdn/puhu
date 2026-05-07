@@ -35,9 +35,8 @@ class StatsView extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('İstatistikler'),
+        title: const Text('Statistics'),
         actions: [
-          // Tema değiştirme butonu
           IconButton(
             icon: Icon(
               ref.watch(themeModeNotifierProvider) == ThemeMode.dark
@@ -45,8 +44,8 @@ class StatsView extends ConsumerWidget {
                   : Icons.dark_mode,
             ),
             tooltip: ref.watch(themeModeNotifierProvider) == ThemeMode.dark
-                ? 'Aydınlık Mod'
-                : 'Karanlık Mod',
+                ? 'Light Mode'
+                : 'Dark Mode',
             onPressed: () {
               ref.read(themeModeNotifierProvider.notifier).toggleTheme();
             },
@@ -62,7 +61,7 @@ class StatsView extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.all(16),
               child: Text(
-                'Görev Özeti',
+                'Task Summary',
                 style: textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -73,7 +72,7 @@ class StatsView extends ConsumerWidget {
                 const SizedBox(width: 16),
                 Expanded(
                   child: _StatCard(
-                    title: 'Toplam',
+                    title: 'Total',
                     value: totalTasks.toString(),
                     icon: Icons.list_alt,
                     color: colorScheme.primary,
@@ -82,7 +81,7 @@ class StatsView extends ConsumerWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: _StatCard(
-                    title: 'Tamamlandı',
+                    title: 'Done',
                     value: completedTasks.toString(),
                     icon: Icons.check_circle_outline,
                     color: const Color(0xFF10B981),
@@ -91,7 +90,7 @@ class StatsView extends ConsumerWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: _StatCard(
-                    title: 'Gecikmiş',
+                    title: 'Overdue',
                     value: overdueTasks.toString(),
                     icon: Icons.warning_amber_outlined,
                     color: const Color(0xFFEF4444),
@@ -107,7 +106,7 @@ class StatsView extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
-                'Odak Modu',
+                'Focus Mode',
                 style: textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -119,7 +118,7 @@ class StatsView extends ConsumerWidget {
                 const SizedBox(width: 16),
                 Expanded(
                   child: _FocusStatCard(
-                    title: 'Bugün',
+                    title: 'Today',
                     minutes: todayFocusMinutes,
                     sessions: todaySessions,
                     color: colorScheme.primary,
@@ -129,7 +128,7 @@ class StatsView extends ConsumerWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: _FocusStatCard(
-                    title: 'Bu Hafta',
+                    title: 'This Week',
                     minutes: weekFocusMinutes,
                     sessions: ref.read(focusHistoryProvider.notifier).thisWeekSessions.length,
                     color: const Color(0xFF8B5CF6),
@@ -146,7 +145,7 @@ class StatsView extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
-                'Zaman Bütçesi',
+                'Time Budget',
                 style: textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -172,14 +171,14 @@ class StatsView extends ConsumerWidget {
                 child: Row(
                   children: [
                     Text(
-                      'Son Odak Oturumları',
+                      'Recent Focus Sessions',
                       style: textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const Spacer(),
                     Text(
-                      '${focusHistory.length} oturum',
+                      '${focusHistory.length} session${focusHistory.length != 1 ? 's' : ''}',
                       style: textTheme.bodySmall?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                       ),
@@ -282,7 +281,7 @@ class _FocusStatCard extends StatelessWidget {
 
     final hours = minutes ~/ 60;
     final mins = minutes % 60;
-    final timeStr = hours > 0 ? '${hours}s ${mins}dk' : '${mins}dk';
+    final timeStr = hours > 0 ? '${hours}h ${mins}m' : '${mins}m';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -325,7 +324,7 @@ class _FocusStatCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            '$sessions oturum',
+            '$sessions session${sessions != 1 ? 's' : ''}',
             style: textTheme.labelSmall?.copyWith(
               color: colorScheme.onSurfaceVariant,
             ),
@@ -368,7 +367,7 @@ class _CompletionRateCard extends StatelessWidget {
           Row(
             children: [
               Text(
-                'Tamamlanma Oranı',
+                'Completion Rate',
                 style: textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -477,7 +476,7 @@ class _FocusSessionItem extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '${session.actualMinutes}dk odaklanma',
+                  '${session.actualMinutes}m of focus',
                   style: textTheme.labelSmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),
@@ -508,13 +507,13 @@ class _MotivationCard extends StatelessWidget {
 
   String get _message {
     if (focusMinutes >= 120 && completedTasks >= 5) {
-      return '🌟 İnanılmaz bir gün geçiriyorsun! Enerjin ve odağın muhteşem!';
+      return '🌟 Incredible day! Your energy and focus are outstanding!';
     } else if (focusMinutes >= 60 || completedTasks >= 3) {
-      return '💪 Harika gidiyorsun! Hedeflerine doğru kararlı adımlarla ilerliyorsun.';
+      return '💪 You\'re doing great! Steadily moving towards your goals.';
     } else if (focusMinutes > 0 || completedTasks > 0) {
-      return '🎯 İyi bir başlangıç! Her adım seni hedefine yaklaştırıyor.';
+      return '🎯 Good start! Every step brings you closer to your goal.';
     }
-    return '🚀 Bugün harika şeyler başarabilirsin! Başlamak için bir görev seç.';
+    return '🚀 You can achieve great things today! Pick a task to begin.';
   }
 
   @override

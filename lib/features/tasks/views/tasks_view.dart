@@ -94,9 +94,8 @@ class TasksView extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Görevler'),
+        title: const Text('Tasks'),
         actions: [
-          // Tema değiştirme butonu
           IconButton(
             icon: Icon(
               ref.watch(themeModeNotifierProvider) == ThemeMode.dark
@@ -104,8 +103,8 @@ class TasksView extends ConsumerWidget {
                   : Icons.dark_mode,
             ),
             tooltip: ref.watch(themeModeNotifierProvider) == ThemeMode.dark
-                ? 'Aydınlık Mod'
-                : 'Karanlık Mod',
+                ? 'Light Mode'
+                : 'Dark Mode',
             onPressed: () {
               ref.read(themeModeNotifierProvider.notifier).toggleTheme();
             },
@@ -116,7 +115,7 @@ class TasksView extends ConsumerWidget {
               isLabelVisible: categoryFilter != null,
               child: const Icon(Icons.filter_list),
             ),
-            tooltip: 'Kategori Filtresi',
+            tooltip: 'Category Filter',
             onSelected: (category) {
               ref.read(categoryFilterProvider.notifier).state = category;
             },
@@ -133,7 +132,7 @@ class TasksView extends ConsumerWidget {
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      'Tümü',
+                      'All',
                       style: TextStyle(
                         fontWeight: categoryFilter == null
                             ? FontWeight.bold
@@ -168,7 +167,7 @@ class TasksView extends ConsumerWidget {
         ],
       ),
       body: taskState.isLoading
-          ? const LoadingWidget(message: 'Görevler yükleniyor...')
+          ? const LoadingWidget(message: 'Loading tasks...')
           : Column(
               children: [
                 // Özet kartları
@@ -203,7 +202,7 @@ class TasksView extends ConsumerWidget {
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => AddTaskBottomSheet.show(context),
-        tooltip: 'Yeni Görev',
+        tooltip: 'New Task',
         child: const Icon(Icons.add),
       ),
     );
@@ -224,28 +223,26 @@ class TasksView extends ConsumerWidget {
           // Toplam
           Expanded(
             child: _SummaryCard(
-              title: 'Toplam',
+              title: 'Total',
               value: total.toString(),
               icon: Icons.list_alt,
               color: colorScheme.primary,
             ),
           ),
           const SizedBox(width: 12),
-          // Tamamlanan
           Expanded(
             child: _SummaryCard(
-              title: 'Tamamlandı',
+              title: 'Done',
               value: completed.toString(),
               icon: Icons.check_circle_outline,
               color: const Color(0xFF10B981),
             ),
           ),
           const SizedBox(width: 12),
-          // Gecikmiş
           if (overdue > 0)
             Expanded(
               child: _SummaryCard(
-                title: 'Gecikmiş',
+                title: 'Overdue',
                 value: overdue.toString(),
                 icon: Icons.warning_amber_outlined,
                 color: colorScheme.error,
@@ -263,11 +260,11 @@ class TasksView extends ConsumerWidget {
     ColorScheme colorScheme,
   ) {
     final filters = [
-      (TaskFilter.all, 'Tümü', Icons.list),
-      (TaskFilter.today, 'Bugün', Icons.today),
-      (TaskFilter.upcoming, 'Yaklaşan', Icons.event),
-      (TaskFilter.completed, 'Bitti', Icons.check_circle),
-      (TaskFilter.overdue, 'Gecikmiş', Icons.warning_amber),
+      (TaskFilter.all, 'All', Icons.list),
+      (TaskFilter.today, 'Today', Icons.today),
+      (TaskFilter.upcoming, 'Upcoming', Icons.event),
+      (TaskFilter.completed, 'Done', Icons.check_circle),
+      (TaskFilter.overdue, 'Overdue', Icons.warning_amber),
     ];
 
     return Padding(
@@ -334,28 +331,28 @@ class TasksView extends ConsumerWidget {
 
     switch (filter) {
       case TaskFilter.all:
-        title = 'Henüz görev yok';
-        subtitle = 'Yeni bir görev ekleyerek başlayın';
+        title = 'No tasks yet';
+        subtitle = 'Add a new task to get started';
         icon = Icons.task_alt;
         break;
       case TaskFilter.today:
-        title = 'Bugün için görev yok';
-        subtitle = 'Bugün için yeni görev ekleyin';
+        title = 'No tasks for today';
+        subtitle = 'Add a task for today';
         icon = Icons.today;
         break;
       case TaskFilter.upcoming:
-        title = 'Yaklaşan görev yok';
-        subtitle = 'Gelecek için görev planlayın';
+        title = 'No upcoming tasks';
+        subtitle = 'Plan tasks for the future';
         icon = Icons.event;
         break;
       case TaskFilter.completed:
-        title = 'Tamamlanan görev yok';
-        subtitle = 'Görevlerinizi tamamlamaya başlayın';
+        title = 'No completed tasks';
+        subtitle = 'Start completing your tasks';
         icon = Icons.check_circle;
         break;
       case TaskFilter.overdue:
-        title = 'Gecikmiş görev yok';
-        subtitle = 'Harika! Tüm görevler zamanında';
+        title = 'No overdue tasks';
+        subtitle = 'Great! All tasks are on time';
         icon = Icons.celebration;
         break;
     }
@@ -365,7 +362,7 @@ class TasksView extends ConsumerWidget {
       title: title,
       subtitle: filter == TaskFilter.overdue 
           ? subtitle 
-          : 'Yeni görev eklemek için + butonuna tıklayın',
+          : 'Tap + to add a new task',
     );
   }
 }

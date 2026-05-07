@@ -81,7 +81,7 @@ class _FocusCompletionDialogState extends ConsumerState<FocusCompletionDialog>
       // Time budget'a ekle
       if (widget.focusType == FocusType.work) {
         final timerState = ref.read(focusTimerProvider);
-        final categoryName = timerState.category?.title ?? 'İş';
+        final categoryName = timerState.category?.title ?? 'Work';
         ref
             .read(timeBudgetProvider.notifier)
             .addTimeToCategory(categoryName, widget.elapsedMinutes);
@@ -96,7 +96,7 @@ class _FocusCompletionDialogState extends ConsumerState<FocusCompletionDialog>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Hata: $e')),
+          SnackBar(content: Text('Error: $e')),
         );
       }
     } finally {
@@ -153,7 +153,7 @@ class _FocusCompletionDialogState extends ConsumerState<FocusCompletionDialog>
 
               // Başlık
               Text(
-                'Harika İş! 🎉',
+                'Great Work! 🎉',
                 style: textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -168,7 +168,7 @@ class _FocusCompletionDialogState extends ConsumerState<FocusCompletionDialog>
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  '${widget.elapsedMinutes} dakika ${widget.focusType.title.toLowerCase()}',
+                  '${widget.elapsedMinutes} minutes of ${widget.focusType.title.toLowerCase()}',
                   style: textTheme.bodyLarge?.copyWith(
                     color: colorScheme.primary,
                     fontWeight: FontWeight.w600,
@@ -179,7 +179,7 @@ class _FocusCompletionDialogState extends ConsumerState<FocusCompletionDialog>
 
               // Mood seçimi başlığı
               Text(
-                'Nasıl hissediyorsun?',
+                'How are you feeling?',
                 style: textTheme.titleMedium?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),
@@ -242,7 +242,7 @@ class _FocusCompletionDialogState extends ConsumerState<FocusCompletionDialog>
                 controller: _noteController,
                 maxLines: 2,
                 decoration: InputDecoration(
-                  hintText: 'Not ekle (opsiyonel)',
+                  hintText: 'Add a note (optional)',
                   prefixIcon: const Icon(Icons.note_alt_outlined),
                   filled: true,
                   fillColor: colorScheme.surfaceContainerHighest.withAlpha(100),
@@ -275,7 +275,7 @@ class _FocusCompletionDialogState extends ConsumerState<FocusCompletionDialog>
                           ),
                         )
                       : const Text(
-                          'Kaydet',
+                          'Save',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -292,7 +292,7 @@ class _FocusCompletionDialogState extends ConsumerState<FocusCompletionDialog>
                   Navigator.pop(context);
                 },
                 child: Text(
-                  'Kaydetmeden Geç',
+                  'Skip',
                   style: TextStyle(
                     color: colorScheme.onSurfaceVariant,
                   ),

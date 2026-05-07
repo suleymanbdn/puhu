@@ -34,9 +34,8 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
     return Scaffold(
       backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        title: const Text('Takvim'),
+        title: const Text('Calendar'),
         actions: [
-          // Tema değiştirme butonu
           IconButton(
             icon: Icon(
               ref.watch(themeModeNotifierProvider) == ThemeMode.dark
@@ -44,13 +43,12 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
                   : Icons.dark_mode,
             ),
             tooltip: ref.watch(themeModeNotifierProvider) == ThemeMode.dark
-                ? 'Aydınlık Mod'
-                : 'Karanlık Mod',
+                ? 'Light Mode'
+                : 'Dark Mode',
             onPressed: () {
               ref.read(themeModeNotifierProvider.notifier).toggleTheme();
             },
           ),
-          // Format değiştirme butonu
           IconButton(
             icon: Icon(
               _calendarFormat == CalendarFormat.month
@@ -58,8 +56,8 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
                   : Icons.calendar_view_month_outlined,
             ),
             tooltip: _calendarFormat == CalendarFormat.month
-                ? 'Haftalık Görünüm'
-                : 'Aylık Görünüm',
+                ? 'Weekly View'
+                : 'Monthly View',
             onPressed: () {
               setState(() {
                 _calendarFormat = _calendarFormat == CalendarFormat.month
@@ -88,8 +86,8 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
             child: tasksForDate.isEmpty
                 ? const EmptyStateWidget(
                     icon: Icons.event_available,
-                    title: 'Bugün görev yok',
-                    subtitle: 'Yeni görev eklemek için + butonuna tıklayın',
+                    title: 'No tasks for this day',
+                    subtitle: 'Tap + to add a new task',
                   )
                 : ListView.builder(
                     padding: const EdgeInsets.only(top: 8, bottom: 100),
@@ -109,7 +107,7 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
           context,
           initialDate: selectedDate,
         ),
-        tooltip: 'Görev Ekle',
+        tooltip: 'Add Task',
         child: const Icon(Icons.add),
       ),
     );
@@ -136,7 +134,7 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
         lastDay: DateTime.utc(2030, 12, 31),
         focusedDay: _focusedDay,
         calendarFormat: _calendarFormat,
-        locale: 'tr_TR',
+        locale: 'en_US',
         startingDayOfWeek: StartingDayOfWeek.monday,
         rowHeight: 42,
         daysOfWeekHeight: 20,
@@ -315,13 +313,13 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
 
     String dateLabel;
     if (selected == today) {
-      dateLabel = 'Bugün';
+      dateLabel = 'Today';
     } else if (selected == today.add(const Duration(days: 1))) {
-      dateLabel = 'Yarın';
+      dateLabel = 'Tomorrow';
     } else if (selected == today.subtract(const Duration(days: 1))) {
-      dateLabel = 'Dün';
+      dateLabel = 'Yesterday';
     } else {
-      dateLabel = DateFormat('d MMMM, EEEE', 'tr_TR').format(selectedDate);
+      dateLabel = DateFormat('d MMMM, EEEE', 'en_US').format(selectedDate);
     }
 
     final completedCount = tasks.where((t) => t.isCompleted).length;
@@ -345,8 +343,8 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
               const SizedBox(height: 4),
               Text(
                 tasks.isEmpty
-                    ? 'Görev yok'
-                    : '${tasks.length} görev${completedCount > 0 ? ', $completedCount tamamlandı' : ''}',
+                    ? 'No tasks'
+                    : '${tasks.length} task${tasks.length != 1 ? 's' : ''}${completedCount > 0 ? ', $completedCount done' : ''}',
                 style: textTheme.bodySmall?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),

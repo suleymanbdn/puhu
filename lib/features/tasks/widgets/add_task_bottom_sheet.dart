@@ -70,7 +70,7 @@ class _AddTaskBottomSheetState extends ConsumerState<AddTaskBottomSheet> {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Görev başarıyla eklendi'),
+            content: const Text('Task added successfully'),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
@@ -82,7 +82,7 @@ class _AddTaskBottomSheetState extends ConsumerState<AddTaskBottomSheet> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Hata: $e'),
+            content: Text('Error: $e'),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
@@ -153,7 +153,7 @@ class _AddTaskBottomSheetState extends ConsumerState<AddTaskBottomSheet> {
 
                   // Başlık
                   Text(
-                    'Yeni Görev',
+                    'New Task',
                     style: textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -166,13 +166,13 @@ class _AddTaskBottomSheetState extends ConsumerState<AddTaskBottomSheet> {
                     autofocus: true,
                     textCapitalization: TextCapitalization.sentences,
                     decoration: const InputDecoration(
-                      labelText: 'Görev Başlığı',
-                      hintText: 'Ne yapmanız gerekiyor?',
+                      labelText: 'Task Title',
+                      hintText: 'What do you need to do?',
                       prefixIcon: Icon(Icons.edit_outlined),
                     ),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
-                        return 'Lütfen bir başlık girin';
+                        return 'Please enter a title';
                       }
                       return null;
                     },
@@ -185,8 +185,8 @@ class _AddTaskBottomSheetState extends ConsumerState<AddTaskBottomSheet> {
                     textCapitalization: TextCapitalization.sentences,
                     maxLines: 2,
                     decoration: const InputDecoration(
-                      labelText: 'Açıklama (Opsiyonel)',
-                      hintText: 'Ek detaylar...',
+                      labelText: 'Description (Optional)',
+                      hintText: 'Additional details...',
                       prefixIcon: Icon(Icons.notes_outlined),
                     ),
                   ),
@@ -194,7 +194,7 @@ class _AddTaskBottomSheetState extends ConsumerState<AddTaskBottomSheet> {
 
                   // Tarih seçimi
                   Text(
-                    'Tarih',
+                    'Date',
                     style: textTheme.titleSmall?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
@@ -221,7 +221,7 @@ class _AddTaskBottomSheetState extends ConsumerState<AddTaskBottomSheet> {
                           ),
                           const SizedBox(width: 12),
                           Text(
-                            DateFormat('d MMMM yyyy, EEEE', 'tr_TR')
+                            DateFormat('d MMMM yyyy, EEEE', 'en_US')
                                 .format(_selectedDate),
                             style: textTheme.bodyLarge,
                           ),
@@ -238,7 +238,7 @@ class _AddTaskBottomSheetState extends ConsumerState<AddTaskBottomSheet> {
 
                   // Kategori seçimi
                   Text(
-                    'Kategori',
+                    'Category',
                     style: textTheme.titleSmall?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
@@ -279,7 +279,7 @@ class _AddTaskBottomSheetState extends ConsumerState<AddTaskBottomSheet> {
 
                   // Öncelik seçimi
                   Text(
-                    'Öncelik',
+                    'Priority',
                     style: textTheme.titleSmall?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
@@ -365,7 +365,7 @@ class _AddTaskBottomSheetState extends ConsumerState<AddTaskBottomSheet> {
                               ),
                             )
                           : const Text(
-                              'Görevi Ekle',
+                              'Add Task',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,

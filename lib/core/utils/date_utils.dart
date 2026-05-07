@@ -6,12 +6,11 @@ class AppDateUtils {
 
   /// Tarihi "14 Aralık 2025" formatında döndürür
   static String formatDateFull(DateTime date) {
-    return DateFormat('d MMMM yyyy', 'tr_TR').format(date);
+    return DateFormat('d MMMM yyyy', 'en_US').format(date);
   }
 
-  /// Tarihi "14 Ara" formatında döndürür
   static String formatDateShort(DateTime date) {
-    return DateFormat('d MMM', 'tr_TR').format(date);
+    return DateFormat('d MMM', 'en_US').format(date);
   }
 
   /// Saati "14:30" formatında döndürür
@@ -27,14 +26,14 @@ class AppDateUtils {
   /// Dakikayı "1s 30dk" formatına çevirir
   static String formatDuration(int minutes) {
     if (minutes < 60) {
-      return '${minutes}dk';
+      return '${minutes}m';
     }
     final hours = minutes ~/ 60;
     final remainingMinutes = minutes % 60;
     if (remainingMinutes == 0) {
-      return '${hours}s';
+      return '${hours}h';
     }
-    return '${hours}s ${remainingMinutes}dk';
+    return '${hours}h ${remainingMinutes}m';
   }
 
   /// Bugün mü kontrol eder

@@ -55,22 +55,22 @@ class MainScaffold extends ConsumerWidget {
           NavigationDestination(
             icon: Icon(Icons.task_alt_outlined),
             selectedIcon: Icon(Icons.task_alt),
-            label: 'Görevler',
+            label: 'Tasks',
           ),
           NavigationDestination(
             icon: Icon(Icons.calendar_month_outlined),
             selectedIcon: Icon(Icons.calendar_month),
-            label: 'Takvim',
+            label: 'Calendar',
           ),
           NavigationDestination(
             icon: Icon(Icons.timer_outlined),
             selectedIcon: Icon(Icons.timer),
-            label: 'Zamanlayıcı',
+            label: 'Focus',
           ),
           NavigationDestination(
             icon: Icon(Icons.bar_chart_outlined),
             selectedIcon: Icon(Icons.bar_chart),
-            label: 'İstatistik',
+            label: 'Stats',
           ),
         ],
       ),

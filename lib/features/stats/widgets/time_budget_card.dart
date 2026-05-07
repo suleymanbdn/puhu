@@ -53,13 +53,13 @@ class TimeBudgetCard extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Haftalık Zaman Bütçesi',
+                        'Weekly Time Budget',
                         style: textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       Text(
-                        '${totalSpent.toStringAsFixed(1)} / ${totalTarget.toStringAsFixed(0)} saat',
+                        '${totalSpent.toStringAsFixed(1)} / ${totalTarget.toStringAsFixed(0)}h',
                         style: textTheme.bodySmall?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),
@@ -156,7 +156,7 @@ class _BudgetProgressItem extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    '${budget.spentHours.toStringAsFixed(1)} / ${budget.targetHours.toStringAsFixed(0)} saat',
+                    '${budget.spentHours.toStringAsFixed(1)} / ${budget.targetHours.toStringAsFixed(0)}h',
                     style: textTheme.labelMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                       color: isOverBudget
@@ -166,8 +166,8 @@ class _BudgetProgressItem extends StatelessWidget {
                   ),
                   Text(
                     isCompleted
-                        ? 'Hedef tamamlandı! ✓'
-                        : 'Kalan: ${budget.remainingHours.toStringAsFixed(1)} saat',
+                        ? 'Goal reached! ✓'
+                        : 'Remaining: ${budget.remainingHours.toStringAsFixed(1)}h',
                     style: textTheme.labelSmall?.copyWith(
                       color: isCompleted
                           ? const Color(0xFF10B981)
@@ -270,7 +270,7 @@ class TimeBudgetCompact extends ConsumerWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                'Zaman Bütçesi',
+                'Time Budget',
                 style: textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -313,7 +313,7 @@ class TimeBudgetCompact extends ConsumerWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${budget.spentHours.toStringAsFixed(0)}s',
+                        '${budget.spentHours.toStringAsFixed(0)}h',
                         style: textTheme.labelSmall?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),

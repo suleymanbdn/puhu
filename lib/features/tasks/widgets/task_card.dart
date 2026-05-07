@@ -44,16 +44,16 @@ class TaskCard extends ConsumerWidget {
         return await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Görevi Sil'),
-            content: const Text('Bu görevi silmek istediğinizden emin misiniz?'),
+            title: const Text('Delete Task'),
+            content: const Text('Are you sure you want to delete this task?'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('İptal'),
+                child: const Text('Cancel'),
               ),
               FilledButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text('Sil'),
+                child: const Text('Delete'),
               ),
             ],
           ),
@@ -263,11 +263,11 @@ class TaskCard extends ConsumerWidget {
     final taskDate = DateTime(date.year, date.month, date.day);
 
     if (taskDate == today) {
-      return 'Bugün';
+      return 'Today';
     } else if (taskDate == today.add(const Duration(days: 1))) {
-      return 'Yarın';
+      return 'Tomorrow';
     } else if (taskDate == today.subtract(const Duration(days: 1))) {
-      return 'Dün';
+      return 'Yesterday';
     } else {
       return AppDateUtils.formatDateShort(date);
     }

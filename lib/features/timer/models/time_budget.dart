@@ -119,25 +119,25 @@ class DefaultBudgets {
     return [
       TimeBudget(
         id: 'work_budget',
-        categoryName: 'İş',
-        targetMinutesPerWeek: 30 * 60, // 30 saat
+        categoryName: 'Work',
+        targetMinutesPerWeek: 30 * 60,
         weekStartDate: weekStart,
       ),
       TimeBudget(
         id: 'study_budget',
-        categoryName: 'Eğitim',
-        targetMinutesPerWeek: 10 * 60, // 10 saat
+        categoryName: 'Education',
+        targetMinutesPerWeek: 10 * 60,
         weekStartDate: weekStart,
       ),
       TimeBudget(
         id: 'personal_budget',
-        categoryName: 'Kişisel',
-        targetMinutesPerWeek: 5 * 60, // 5 saat
+        categoryName: 'Personal',
+        targetMinutesPerWeek: 5 * 60,
         weekStartDate: weekStart,
       ),
       TimeBudget(
         id: 'health_budget',
-        categoryName: 'Sağlık',
+        categoryName: 'Health',
         targetMinutesPerWeek: 7 * 60, // 7 saat
         weekStartDate: weekStart,
       ),

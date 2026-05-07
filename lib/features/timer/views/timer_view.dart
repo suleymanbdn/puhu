@@ -84,9 +84,8 @@ class _TimerViewState extends ConsumerState<TimerView>
           ? timerState.focusType.color.withAlpha(15)
           : null,
       appBar: AppBar(
-        title: const Text('Odak Modu'),
+        title: const Text('Focus Mode'),
         actions: [
-          // Tema değiştirme butonu
           IconButton(
             icon: Icon(
               ref.watch(themeModeNotifierProvider) == ThemeMode.dark
@@ -94,8 +93,8 @@ class _TimerViewState extends ConsumerState<TimerView>
                   : Icons.dark_mode,
             ),
             tooltip: ref.watch(themeModeNotifierProvider) == ThemeMode.dark
-                ? 'Aydınlık Mod'
-                : 'Karanlık Mod',
+                ? 'Light Mode'
+                : 'Dark Mode',
             onPressed: () {
               ref.read(themeModeNotifierProvider.notifier).toggleTheme();
             },
@@ -118,7 +117,7 @@ class _TimerViewState extends ConsumerState<TimerView>
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  '${todayStats['minutes']}dk',
+                  '${todayStats['minutes']}m',
                   style: textTheme.labelMedium?.copyWith(
                     color: colorScheme.primary,
                     fontWeight: FontWeight.bold,
@@ -337,13 +336,13 @@ class _TimerViewState extends ConsumerState<TimerView>
   String _getStatusText(TimerStatus status) {
     switch (status) {
       case TimerStatus.idle:
-        return 'Hazır';
+        return 'Ready';
       case TimerStatus.running:
-        return 'Odaklanıyor...';
+        return 'Focusing...';
       case TimerStatus.paused:
-        return 'Duraklatıldı';
+        return 'Paused';
       case TimerStatus.completed:
-        return 'Tamamlandı!';
+        return 'Done!';
     }
   }
 
@@ -359,7 +358,7 @@ class _TimerViewState extends ConsumerState<TimerView>
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            'Kategori',
+            'Category',
             style: textTheme.labelSmall?.copyWith(
               color: colorScheme.onSurfaceVariant,
             ),
@@ -438,7 +437,7 @@ class _TimerViewState extends ConsumerState<TimerView>
           if (timerState.status != TimerStatus.idle)
             _ControlButton(
               icon: Icons.refresh,
-              label: 'Sıfırla',
+              label: 'Reset',
               onPressed: () {
                 HapticFeedback.mediumImpact();
                 ref.read(focusTimerProvider.notifier).reset();
@@ -475,7 +474,7 @@ class _TimerViewState extends ConsumerState<TimerView>
               timerState.status == TimerStatus.paused)
             _ControlButton(
               icon: Icons.stop,
-              label: 'Bitir',
+              label: 'Finish',
               onPressed: () {
                 HapticFeedback.mediumImpact();
                 _showCompletionDialog(timerState);
@@ -548,19 +547,19 @@ class _MainControlButton extends StatelessWidget {
     switch (status) {
       case TimerStatus.idle:
         icon = Icons.play_arrow;
-        label = 'Başlat';
+        label = 'Start';
         break;
       case TimerStatus.running:
         icon = Icons.pause;
-        label = 'Duraklat';
+        label = 'Pause';
         break;
       case TimerStatus.paused:
         icon = Icons.play_arrow;
-        label = 'Devam';
+        label = 'Resume';
         break;
       case TimerStatus.completed:
         icon = Icons.refresh;
-        label = 'Tekrar';
+        label = 'Restart';
         break;
     }
 

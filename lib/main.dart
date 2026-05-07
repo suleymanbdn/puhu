@@ -18,7 +18,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Türkçe tarih formatlaması için intl başlatma
-  await initializeDateFormatting('tr_TR', null);
+  await initializeDateFormatting('en_US', null);
 
   // Hive başlatma
   await _initHive();

@@ -18,11 +18,11 @@ enum FocusMood {
   String get title {
     switch (this) {
       case FocusMood.happy:
-        return 'Mutlu';
+        return 'Happy';
       case FocusMood.neutral:
-        return 'Nötr';
+        return 'Neutral';
       case FocusMood.stressed:
-        return 'Stresli';
+        return 'Stressed';
     }
   }
 
@@ -64,11 +64,11 @@ enum FocusType {
   String get title {
     switch (this) {
       case FocusType.work:
-        return 'Çalışma';
+        return 'Work';
       case FocusType.shortBreak:
-        return 'Kısa Ara';
+        return 'Short Break';
       case FocusType.longBreak:
-        return 'Uzun Ara';
+        return 'Long Break';
     }
   }
 
