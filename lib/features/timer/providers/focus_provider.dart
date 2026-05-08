@@ -4,6 +4,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../core/services/settings_provider.dart';
 import '../models/focus_session.dart';
 import '../models/time_budget.dart';
 import '../../tasks/models/task_enums.dart';
@@ -77,10 +78,32 @@ class FocusTimerState {
 // =============================================================================
 
 class FocusTimerNotifier extends StateNotifier<FocusTimerState> {
-  FocusTimerNotifier() : super(const FocusTimerState());
+  FocusTimerNotifier(this.ref) : super(const FocusTimerState()) {
+    // Başlangıçta ayarlardan süreleri çek
+    _applySettings(ref.read(settingsProvider));
+    
+    // Ayarlar değiştiğinde (ve timer boşta ise) süreleri güncelle
+    ref.listen<SettingsState>(settingsProvider, (previous, next) {
+      if (state.status == TimerStatus.idle) {
+        _applySettings(next);
+      }
+    });
+  }
 
+  final Ref ref;
   Timer? _timer;
   final _uuid = const Uuid();
+
+  void _applySettings(SettingsState settings) {
+    int minutes = settings.workDuration;
+    if (state.focusType == FocusType.shortBreak) minutes = settings.shortBreakDuration;
+    if (state.focusType == FocusType.longBreak) minutes = settings.longBreakDuration;
+
+    state = state.copyWith(
+      totalSeconds: minutes * 60,
+      remainingSeconds: minutes * 60,
+    );
+  }
 
   /// Timer'ı başlat
   void start() {
@@ -97,8 +120,22 @@ class FocusTimerNotifier extends StateNotifier<FocusTimerState> {
       } else {
         _timer?.cancel();
         state = state.copyWith(status: TimerStatus.completed);
+        _handleAutoFlow();
       }
     });
+  }
+
+  void _handleAutoFlow() {
+    final settings = ref.read(settingsProvider);
+    if (settings.autoFlow) {
+      if (state.focusType == FocusType.work) {
+        setFocusType(FocusType.shortBreak);
+        start();
+      } else {
+        setFocusType(FocusType.work);
+        start();
+      }
+    }
   }
 
   /// Timer'ı duraklat
@@ -115,20 +152,30 @@ class FocusTimerNotifier extends StateNotifier<FocusTimerState> {
   /// Timer'ı sıfırla
   void reset() {
     _timer?.cancel();
+    final settings = ref.read(settingsProvider);
+    int minutes = settings.workDuration;
+    if (state.focusType == FocusType.shortBreak) minutes = settings.shortBreakDuration;
+    if (state.focusType == FocusType.longBreak) minutes = settings.longBreakDuration;
+
     state = FocusTimerState(
       focusType: state.focusType,
-      totalSeconds: state.focusType.defaultMinutes * 60,
-      remainingSeconds: state.focusType.defaultMinutes * 60,
+      totalSeconds: minutes * 60,
+      remainingSeconds: minutes * 60,
     );
   }
 
   /// Focus tipini değiştir
   void setFocusType(FocusType type) {
     _timer?.cancel();
+    final settings = ref.read(settingsProvider);
+    int minutes = settings.workDuration;
+    if (type == FocusType.shortBreak) minutes = settings.shortBreakDuration;
+    if (type == FocusType.longBreak) minutes = settings.longBreakDuration;
+
     state = FocusTimerState(
       focusType: type,
-      totalSeconds: type.defaultMinutes * 60,
-      remainingSeconds: type.defaultMinutes * 60,
+      totalSeconds: minutes * 60,
+      remainingSeconds: minutes * 60,
     );
   }
 
@@ -261,30 +308,34 @@ class TimeBudgetNotifier extends StateNotifier<TimeBudgetState> {
 
   /// Bütçeye süre ekle
   Future<void> addTimeToCategory(String categoryName, int minutes) async {
-    final budgets = state.budgets.map((b) {
+    final writes = <Future<void>>[];
+    final updatedBudgets = state.budgets.map((b) {
       if (b.categoryName == categoryName) {
         final updated = b.copyWith(spentMinutes: b.spentMinutes + minutes);
-        _box.put(b.id, updated);
+        writes.add(_box.put(b.id, updated));
         return updated;
       }
       return b;
     }).toList();
 
-    state = state.copyWith(budgets: budgets);
+    await Future.wait(writes);
+    state = state.copyWith(budgets: updatedBudgets);
   }
 
   /// Bütçe hedefini güncelle
   Future<void> updateBudgetTarget(String budgetId, int newTargetMinutes) async {
-    final budgets = state.budgets.map((b) {
+    final writes = <Future<void>>[];
+    final updatedBudgets = state.budgets.map((b) {
       if (b.id == budgetId) {
         final updated = b.copyWith(targetMinutesPerWeek: newTargetMinutes);
-        _box.put(b.id, updated);
+        writes.add(_box.put(b.id, updated));
         return updated;
       }
       return b;
     }).toList();
 
-    state = state.copyWith(budgets: budgets);
+    await Future.wait(writes);
+    state = state.copyWith(budgets: updatedBudgets);
   }
 
   /// Haftalık bütçeleri sıfırla (yeni hafta için)
@@ -368,7 +419,7 @@ class FocusHistoryNotifier extends StateNotifier<List<FocusSession>> {
 /// Focus timer provider
 final focusTimerProvider =
     StateNotifierProvider<FocusTimerNotifier, FocusTimerState>((ref) {
-  return FocusTimerNotifier();
+  return FocusTimerNotifier(ref);
 });
 
 /// Time budget provider
@@ -389,5 +440,14 @@ final todayFocusStatsProvider = Provider((ref) {
   return {
     'sessions': history.todaySessions.length,
     'minutes': history.todayTotalMinutes,
+  };
+});
+
+/// Bu haftanın istatistikleri
+final weekFocusStatsProvider = Provider((ref) {
+  final history = ref.watch(focusHistoryProvider.notifier);
+  return {
+    'sessions': history.thisWeekSessions.length,
+    'minutes': history.weekTotalMinutes,
   };
 });

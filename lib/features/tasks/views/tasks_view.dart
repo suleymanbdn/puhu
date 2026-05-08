@@ -1,424 +1,443 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/theme_provider.dart';
 import '../../../shared/widgets/empty_state_widget.dart';
 import '../../../shared/widgets/loading_widget.dart';
-import '../models/task_model.dart';
-import '../models/task_enums.dart';
+import '../../../shared/widgets/glass_container.dart';
+
 import '../providers/task_provider.dart';
 import '../widgets/task_card.dart';
 import '../widgets/add_task_bottom_sheet.dart';
 
-/// Filtre seçenekleri
-enum TaskFilter { all, today, upcoming, completed, overdue }
-
-/// Seçili filtre provider'ı
-final taskFilterProvider = StateProvider<TaskFilter>((ref) => TaskFilter.all);
-
-/// Seçili kategoriye göre filtre provider'ı
-final categoryFilterProvider = StateProvider<TaskCategory?>((ref) => null);
-
-/// Filtrelenmiş görevler provider'ı
-final filteredTasksProvider = Provider<List<Task>>((ref) {
-  final taskState = ref.watch(taskListProvider);
-  final filter = ref.watch(taskFilterProvider);
-  final categoryFilter = ref.watch(categoryFilterProvider);
-
-  var tasks = taskState.tasks;
-
-  // Kategori filtresi
-  if (categoryFilter != null) {
-    tasks = tasks.where((t) => t.category == categoryFilter).toList();
-  }
-
-  // Ana filtre
-  final now = DateTime.now();
-  final today = DateTime(now.year, now.month, now.day);
-
-  switch (filter) {
-    case TaskFilter.all:
-      break;
-    case TaskFilter.today:
-      tasks = tasks.where((t) {
-        final taskDate = DateTime(t.date.year, t.date.month, t.date.day);
-        return taskDate == today;
-      }).toList();
-      break;
-    case TaskFilter.upcoming:
-      tasks = tasks.where((t) {
-        final taskDate = DateTime(t.date.year, t.date.month, t.date.day);
-        return taskDate.isAfter(today) && !t.isCompleted;
-      }).toList();
-      break;
-    case TaskFilter.completed:
-      tasks = tasks.where((t) => t.isCompleted).toList();
-      break;
-    case TaskFilter.overdue:
-      tasks = tasks.where((t) {
-        final taskDate = DateTime(t.date.year, t.date.month, t.date.day);
-        return taskDate.isBefore(today) && !t.isCompleted;
-      }).toList();
-      break;
-  }
-
-  // Sıralama: Önce tamamlanmamışlar, sonra tarihe göre
-  tasks.sort((a, b) {
-    if (a.isCompleted != b.isCompleted) {
-      return a.isCompleted ? 1 : -1;
-    }
-    return a.date.compareTo(b.date);
-  });
-
-  return tasks;
-});
-
-/// Görevler ana ekranı
+/// Görevler ekranı — 21st.dev stili Bento Dashboard
 class TasksView extends ConsumerWidget {
   const TasksView({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final taskState = ref.watch(taskListProvider);
+    final filteredTasks = ref.watch(filteredTasksProvider);
+    final currentFilter = ref.watch(taskFilterProvider);
+
+    final total = taskState.tasks.length;
+    final completed = taskState.tasks.where((t) => t.isCompleted).length;
+    final overdue = ref.read(taskListProvider.notifier).overdueTasks.length;
+
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Scaffold(
+      backgroundColor: colorScheme.surface,
+      body: Stack(
+        children: [
+          // Ana İçerik
+          taskState.isLoading
+              ? const LoadingWidget(message: 'Yükleniyor...')
+              : CustomScrollView(
+                  slivers: [
+                    // Dinamik Başlık (Sliver)
+                    const _SliverGreetingHeader(),
+
+                    // Bento Grid İstatistikleri
+                    if (total > 0)
+                      SliverToBoxAdapter(
+                        child: _BentoSummaryGrid(
+                          total: total,
+                          completed: completed,
+                          overdue: overdue,
+                        ),
+                      ),
+
+                    // Filtreleme (Sticky Pill Tabs)
+                    SliverPersistentHeader(
+                      pinned: true,
+                      delegate: _StickyFilterDelegate(
+                        child: _LiquidFilterTabs(current: currentFilter),
+                      ),
+                    ),
+
+                    // Görev Listesi
+                    if (filteredTasks.isEmpty)
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: Center(
+                            child: _EmptyState(filter: currentFilter)),
+                      )
+                    else
+                      SliverPadding(
+                        padding: const EdgeInsets.only(top: 8, bottom: 120),
+                        sliver: SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                            (context, i) => TaskCard(
+                              task: filteredTasks[i],
+                              showDate: currentFilter != TaskFilter.today,
+                            ),
+                            childCount: filteredTasks.length,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+        ],
+      ),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 180),
+        child: FloatingActionButton(
+          onPressed: () => AddTaskBottomSheet.show(context),
+          tooltip: 'Yeni Görev',
+          child: const Icon(Icons.add_rounded),
+        ),
+      ),
+    );
+  }
+}
+
+/// Göz alıcı başlık kısmı
+class _SliverGreetingHeader extends ConsumerWidget {
+  const _SliverGreetingHeader();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeModeNotifierProvider);
+
+    final textTheme = Theme.of(context).textTheme;
+
+    final quotes = [
+      'Günü planla, zamanı yönet ⚡️',
+      'Zaman en değerli hazinendir ⏳',
+      'Bugün ne başarıyoruz? 🎯',
+      'Odağını koru, hedefine ulaş 🚀',
+      'Gelecek bugün başlar 🌱',
+      'Anı yakala, erteleme 💪',
+      'Her saniye yeni bir fırsat ⏱️',
+    ];
+    final dayOfYear = DateTime.now().difference(DateTime(DateTime.now().year, 1, 1)).inDays;
+    final greeting = quotes[dayOfYear % quotes.length];
+
+    return SliverAppBar(
+      expandedHeight: 120.0,
+      floating: false,
+      pinned: true,
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      flexibleSpace: FlexibleSpaceBar(
+        titlePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        title: Text(
+          greeting,
+          style: textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.5,
+          ),
+        ),
+      ),
+      actions: [
+        IconButton(
+          icon: Icon(
+            themeMode == ThemeMode.dark
+                ? Icons.light_mode_rounded
+                : Icons.dark_mode_rounded,
+          ),
+          onPressed: () =>
+              ref.read(themeModeNotifierProvider.notifier).toggleTheme(),
+        ),
+
+        const SizedBox(width: 8),
+      ],
+    );
+  }
+}
+
+/// Bento Grid formatında istatistikler
+class _BentoSummaryGrid extends StatelessWidget {
+  const _BentoSummaryGrid({
+    required this.total,
+    required this.completed,
+    required this.overdue,
+  });
+
+  final int total;
+  final int completed;
+  final int overdue;
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = total > 0 ? completed / total : 0.0;
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: Row(
+        children: [
+          // Sol Büyük Kare (Progress)
+          Expanded(
+            flex: 5,
+            child: GlassContainer(
+              padding: const EdgeInsets.all(20),
+              color: colorScheme.surface,
+              borderRadius: BorderRadius.circular(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Günlük\nİlerleme',
+                      style: textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w800, height: 1.2)),
+                  const SizedBox(height: 24),
+                  Center(
+                    child: SizedBox(
+                      width: 90,
+                      height: 90,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          CircularProgressIndicator(
+                            value: progress,
+                            strokeWidth: 8,
+                            backgroundColor: colorScheme.outline.withAlpha(50),
+                            valueColor: AlwaysStoppedAnimation(
+                              progress >= 1.0
+                                  ? const Color(0xFF10B981)
+                                  : colorScheme.primary,
+                            ),
+                            strokeCap: StrokeCap.round,
+                          ),
+                          Center(
+                            child: Text(
+                              '${(progress * 100).round()}%',
+                              style: textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold, fontSize: 18),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Sağ Taraf (İki ufak dikdörtgen)
+          Expanded(
+            flex: 5,
+            child: Column(
+              children: [
+                // Tamamlanan
+                GlassContainer(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 22),
+                  color: colorScheme.surface,
+                  borderRadius: BorderRadius.circular(20),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                            color: const Color(0xFF10B981).withAlpha(40),
+                            shape: BoxShape.circle),
+                        child: const Icon(Icons.check_circle_rounded,
+                            color: Color(0xFF10B981), size: 22),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('$completed',
+                              style: textTheme.titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.w800)),
+                          Text('Biten',
+                              style: textTheme.labelSmall?.copyWith(
+                                  color: colorScheme.onSurfaceVariant)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Gecikmiş
+                GlassContainer(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 22),
+                  color: colorScheme.surface,
+                  borderRadius: BorderRadius.circular(20),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                            color: colorScheme.error.withAlpha(40),
+                            shape: BoxShape.circle),
+                        child: Icon(Icons.warning_rounded,
+                            color: colorScheme.error, size: 22),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('$overdue',
+                              style: textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  color: overdue > 0
+                                      ? colorScheme.error
+                                      : null)),
+                          Text('Geciken',
+                              style: textTheme.labelSmall?.copyWith(
+                                  color: colorScheme.onSurfaceVariant)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Akışkan pill (hap) şekilli filtre sekmeleri
+class _LiquidFilterTabs extends ConsumerWidget {
+  const _LiquidFilterTabs({required this.current});
+  final TaskFilter current;
+
+  static const _tabs = [
+    (TaskFilter.all, 'Tümü'),
+    (TaskFilter.today, 'Bugün'),
+    (TaskFilter.upcoming, 'Yaklaşan'),
+    (TaskFilter.completed, 'Bitti'),
+    (TaskFilter.overdue, 'Gecikmiş'),
+  ];
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    final taskState = ref.watch(taskListProvider);
-    final filteredTasks = ref.watch(filteredTasksProvider);
-    final currentFilter = ref.watch(taskFilterProvider);
-    final categoryFilter = ref.watch(categoryFilterProvider);
-
-    // İstatistikler
-    final totalTasks = taskState.tasks.length;
-    final completedTasks = taskState.tasks.where((t) => t.isCompleted).length;
-    final overdueTasks = ref.read(taskListProvider.notifier).overdueTasks.length;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Görevler'),
-        actions: [
-          // Tema değiştirme butonu
-          IconButton(
-            icon: Icon(
-              ref.watch(themeModeNotifierProvider) == ThemeMode.dark
-                  ? Icons.light_mode
-                  : Icons.dark_mode,
-            ),
-            tooltip: ref.watch(themeModeNotifierProvider) == ThemeMode.dark
-                ? 'Aydınlık Mod'
-                : 'Karanlık Mod',
-            onPressed: () {
-              ref.read(themeModeNotifierProvider.notifier).toggleTheme();
-            },
-          ),
-          // Kategori filtresi
-          PopupMenuButton<TaskCategory?>(
-            icon: Badge(
-              isLabelVisible: categoryFilter != null,
-              child: const Icon(Icons.filter_list),
-            ),
-            tooltip: 'Kategori Filtresi',
-            onSelected: (category) {
-              ref.read(categoryFilterProvider.notifier).state = category;
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: null,
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.all_inclusive,
-                      color: categoryFilter == null
-                          ? colorScheme.primary
-                          : colorScheme.onSurface,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Tümü',
-                      style: TextStyle(
-                        fontWeight: categoryFilter == null
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const PopupMenuDivider(),
-              ...TaskCategory.values.map((category) {
-                final isSelected = categoryFilter == category;
-                return PopupMenuItem(
-                  value: category,
-                  child: Row(
-                    children: [
-                      Icon(category.icon, color: category.color),
-                      const SizedBox(width: 12),
-                      Text(
-                        category.title,
-                        style: TextStyle(
-                          fontWeight:
-                              isSelected ? FontWeight.bold : FontWeight.normal,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }),
-            ],
-          ),
-        ],
-      ),
-      body: taskState.isLoading
-          ? const LoadingWidget(message: 'Görevler yükleniyor...')
-          : Column(
-              children: [
-                // Özet kartları
-                if (totalTasks > 0) _buildSummaryCards(
-                  context,
-                  colorScheme,
-                  textTheme,
-                  totalTasks,
-                  completedTasks,
-                  overdueTasks,
-                ),
-
-                // Filtre çipleri
-                _buildFilterChips(context, ref, currentFilter, colorScheme),
-
-                // Görev listesi
-                Expanded(
-                  child: filteredTasks.isEmpty
-                      ? _buildEmptyState(currentFilter, ref)
-                      : ListView.builder(
-                          padding: const EdgeInsets.only(top: 8, bottom: 100),
-                          itemCount: filteredTasks.length,
-                          itemBuilder: (context, index) {
-                            return TaskCard(
-                              task: filteredTasks[index],
-                              showDate: currentFilter != TaskFilter.today,
-                            );
-                          },
-                        ),
-                ),
-              ],
-            ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => AddTaskBottomSheet.show(context),
-        tooltip: 'Yeni Görev',
-        child: const Icon(Icons.add),
-      ),
-    );
-  }
-
-  Widget _buildSummaryCards(
-    BuildContext context,
-    ColorScheme colorScheme,
-    TextTheme textTheme,
-    int total,
-    int completed,
-    int overdue,
-  ) {
     return Container(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          // Toplam
-          Expanded(
-            child: _SummaryCard(
-              title: 'Toplam',
-              value: total.toString(),
-              icon: Icons.list_alt,
-              color: colorScheme.primary,
-            ),
-          ),
-          const SizedBox(width: 12),
-          // Tamamlanan
-          Expanded(
-            child: _SummaryCard(
-              title: 'Tamamlandı',
-              value: completed.toString(),
-              icon: Icons.check_circle_outline,
-              color: const Color(0xFF10B981),
-            ),
-          ),
-          const SizedBox(width: 12),
-          // Gecikmiş
-          if (overdue > 0)
-            Expanded(
-              child: _SummaryCard(
-                title: 'Gecikmiş',
-                value: overdue.toString(),
-                icon: Icons.warning_amber_outlined,
-                color: colorScheme.error,
+      height: 60,
+      alignment: Alignment.center,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        itemCount: _tabs.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (_, i) {
+          final (filter, label) = _tabs[i];
+          final isSelected = current == filter;
+
+          return GestureDetector(
+            onTap: () => ref.read(taskFilterProvider.notifier).state = filter,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutCubic,
+              padding: EdgeInsets.symmetric(
+                  horizontal: isSelected ? 20 : 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? colorScheme.primary
+                    : colorScheme.surfaceContainerHighest.withAlpha(150),
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                            color: colorScheme.primary.withAlpha(100),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4))
+                      ]
+                    : [],
               ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilterChips(
-    BuildContext context,
-    WidgetRef ref,
-    TaskFilter currentFilter,
-    ColorScheme colorScheme,
-  ) {
-    final filters = [
-      (TaskFilter.all, 'Tümü', Icons.list),
-      (TaskFilter.today, 'Bugün', Icons.today),
-      (TaskFilter.upcoming, 'Yaklaşan', Icons.event),
-      (TaskFilter.completed, 'Bitti', Icons.check_circle),
-      (TaskFilter.overdue, 'Gecikmiş', Icons.warning_amber),
-    ];
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Row(
-        children: filters.map((item) {
-          final (filter, label, icon) = item;
-          final isSelected = currentFilter == filter;
-
-          return Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 2),
-              child: GestureDetector(
-                onTap: () {
-              ref.read(taskFilterProvider.notifier).state = filter;
-            },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  decoration: BoxDecoration(
+              child: Center(
+                child: AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 250),
+                  style: textTheme.labelMedium!.copyWith(
                     color: isSelected
-                        ? colorScheme.primaryContainer
-                        : colorScheme.surfaceContainerHighest.withAlpha(100),
-                    borderRadius: BorderRadius.circular(10),
+                        ? colorScheme.onPrimary
+                        : colorScheme.onSurfaceVariant,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                   ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-              icon,
-              size: 18,
-              color: isSelected
-                  ? colorScheme.onPrimaryContainer
-                  : colorScheme.onSurfaceVariant,
-            ),
-                      const SizedBox(height: 2),
-                      Text(
-                        label,
-                        style: TextStyle(
-                          fontSize: 10,
-              color: isSelected
-                  ? colorScheme.onPrimaryContainer
-                  : colorScheme.onSurface,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-            ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
+                  child: Text(label),
                 ),
               ),
             ),
           );
-        }).toList(),
+        },
       ),
-    );
-  }
-
-  Widget _buildEmptyState(TaskFilter filter, WidgetRef ref) {
-    String title;
-    String subtitle;
-    IconData icon;
-
-    switch (filter) {
-      case TaskFilter.all:
-        title = 'Henüz görev yok';
-        subtitle = 'Yeni bir görev ekleyerek başlayın';
-        icon = Icons.task_alt;
-        break;
-      case TaskFilter.today:
-        title = 'Bugün için görev yok';
-        subtitle = 'Bugün için yeni görev ekleyin';
-        icon = Icons.today;
-        break;
-      case TaskFilter.upcoming:
-        title = 'Yaklaşan görev yok';
-        subtitle = 'Gelecek için görev planlayın';
-        icon = Icons.event;
-        break;
-      case TaskFilter.completed:
-        title = 'Tamamlanan görev yok';
-        subtitle = 'Görevlerinizi tamamlamaya başlayın';
-        icon = Icons.check_circle;
-        break;
-      case TaskFilter.overdue:
-        title = 'Gecikmiş görev yok';
-        subtitle = 'Harika! Tüm görevler zamanında';
-        icon = Icons.celebration;
-        break;
-    }
-
-    return EmptyStateWidget(
-      icon: icon,
-      title: title,
-      subtitle: filter == TaskFilter.overdue 
-          ? subtitle 
-          : 'Yeni görev eklemek için + butonuna tıklayın',
     );
   }
 }
 
-/// Özet kartı widget'ı
-class _SummaryCard extends StatelessWidget {
-  const _SummaryCard({
-    required this.title,
-    required this.value,
-    required this.icon,
-    required this.color,
-  });
+/// Sticky Header Delegate (Bulanık arka plan)
+class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
+  _StickyFilterDelegate({required this.child});
+  final Widget child;
 
-  final String title;
-  final String value;
-  final IconData icon;
-  final Color color;
+  @override
+  double get minExtent => 60.0;
+  @override
+  double get maxExtent => 60.0;
+
+  @override
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          color: isDark ? Colors.black.withAlpha(100) : Colors.white.withAlpha(100),
+          child: child,
+        ),
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(_StickyFilterDelegate oldDelegate) =>
+      oldDelegate.child != child;
+}
+
+
+/// Boş durum
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({required this.filter});
+  final TaskFilter filter;
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: color.withAlpha(20),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: color.withAlpha(50),
-          width: 1,
+    final data = switch (filter) {
+      TaskFilter.all => (
+          Icons.check_circle_outline_rounded,
+          'Görev yok',
+          '+ butonuyla ilk görevini ekle'
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: color, size: 22),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: colorScheme.onSurface,
-            ),
-          ),
-          Text(
-            title,
-            style: textTheme.labelSmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
+      TaskFilter.today => (
+          Icons.today_rounded,
+          'Bugün görev yok',
+          'Bugün için bir şeyler planla'
+        ),
+      TaskFilter.upcoming => (
+          Icons.event_rounded,
+          'Yaklaşan görev yok',
+          'Gelecek için görev ekle'
+        ),
+      TaskFilter.completed => (
+          Icons.done_all_rounded,
+          'Tamamlanan yok',
+          'Görevlerini tamamlamaya başla'
+        ),
+      TaskFilter.overdue => (
+          Icons.celebration_rounded,
+          'Gecikmiş yok!',
+          'Tüm görevlerin zamanında 🎉'
+        ),
+    };
+
+    return EmptyStateWidget(
+      icon: data.$1,
+      title: data.$2,
+      subtitle: data.$3,
     );
   }
 }

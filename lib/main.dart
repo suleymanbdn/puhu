@@ -3,11 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'core/constants/app_constants.dart';
 import 'core/router/app_router.dart';
+import 'core/services/notification_service.dart';
+import 'core/services/settings_provider.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_provider.dart';
-import 'features/auth/models/user_model.dart';
+import 'features/update/providers/store_update_provider.dart';
+import 'features/update/views/update_prompt_page.dart';
 import 'features/tasks/models/task_model.dart';
 import 'features/tasks/models/task_enums.dart';
 import 'features/timer/models/focus_session.dart';
@@ -23,10 +28,19 @@ void main() async {
   // Hive başlatma
   await _initHive();
 
+  // Bildirim servisi başlatma
+  await NotificationService.instance.initialize();
+
+  // SharedPreferences başlatma
+  final prefs = await SharedPreferences.getInstance();
+
   // Uygulamayı çalıştır
   runApp(
-    const ProviderScope(
-      child: ZamanYonetimiApp(),
+    ProviderScope(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+      ],
+      child: const ZamanYonetimiApp(),
     ),
   );
 }
@@ -49,12 +63,9 @@ Future<void> _initHive() async {
 
     // Time budget adapter'ı
     if (!Hive.isAdapterRegistered(6)) Hive.registerAdapter(TimeBudgetAdapter());
-
-    // User adapter (typeId: 10)
-    if (!Hive.isAdapterRegistered(10)) Hive.registerAdapter(UserAdapter());
-  } catch (e) {
-    // Adapter zaten kayıtlıysa devam et
-    debugPrint('Adapter kayıt hatası (normal olabilir): $e');
+  } on ArgumentError catch (e) {
+    // Adapter zaten kayıtlıysa güvenle devam et
+    debugPrint('Adapter already registered: $e');
   }
 
   // Box'ları paralel olarak aç (daha hızlı)
@@ -62,7 +73,6 @@ Future<void> _initHive() async {
     Hive.openBox<Task>(AppConstants.tasksBox),
     Hive.openBox<FocusSession>(AppConstants.focusSessionsBox),
     Hive.openBox<TimeBudget>(AppConstants.timeBudgetsBox),
-    Hive.openBox<User>(AppConstants.usersBox),
   ]);
 }
 
@@ -76,6 +86,7 @@ class ZamanYonetimiApp extends ConsumerWidget {
     final themeMode = ref.watch(themeModeNotifierProvider);
     // Router'ı provider'dan al
     final router = ref.watch(appRouterProvider);
+    final storeUpdateAsync = ref.watch(storeUpdateCheckProvider);
 
     return MaterialApp.router(
       title: AppConstants.appName,
@@ -88,6 +99,23 @@ class ZamanYonetimiApp extends ConsumerWidget {
 
       // Router yapılandırması
       routerConfig: router,
+
+      // Play'de güncelleme varsa tam ekran yönlendirme
+      builder: (context, child) {
+        return storeUpdateAsync.when(
+          data: (state) {
+            if (!state.needsPrompt) {
+              return child ?? const SizedBox.shrink();
+            }
+            return UpdatePromptPage(
+              initialState: state,
+              onRecheck: () => ref.invalidate(storeUpdateCheckProvider),
+            );
+          },
+          loading: () => child ?? const SizedBox.shrink(),
+          error: (_, __) => child ?? const SizedBox.shrink(),
+        );
+      },
     );
   }
 }

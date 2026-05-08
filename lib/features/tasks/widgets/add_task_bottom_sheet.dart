@@ -33,6 +33,7 @@ class _AddTaskBottomSheetState extends ConsumerState<AddTaskBottomSheet> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _subtasksController = TextEditingController();
 
   late DateTime _selectedDate;
   TaskCategory _selectedCategory = TaskCategory.personal;
@@ -49,6 +50,7 @@ class _AddTaskBottomSheetState extends ConsumerState<AddTaskBottomSheet> {
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
+    _subtasksController.dispose();
     super.dispose();
   }
 
@@ -58,12 +60,18 @@ class _AddTaskBottomSheetState extends ConsumerState<AddTaskBottomSheet> {
     setState(() => _isLoading = true);
 
     try {
+      final subtasksText = _subtasksController.text.trim();
+      final subtasksList = subtasksText.isNotEmpty 
+          ? subtasksText.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList()
+          : <String>[];
+
       await ref.read(taskListProvider.notifier).addTask(
             title: _titleController.text.trim(),
             description: _descriptionController.text.trim(),
             category: _selectedCategory,
             priority: _selectedPriority,
             date: _selectedDate,
+            subtasks: subtasksList,
           );
 
       if (mounted) {
@@ -190,6 +198,18 @@ class _AddTaskBottomSheetState extends ConsumerState<AddTaskBottomSheet> {
                       prefixIcon: Icon(Icons.notes_outlined),
                     ),
                   ),
+                  const SizedBox(height: 16),
+
+                  // Alt görevler (opsiyonel)
+                  TextFormField(
+                    controller: _subtasksController,
+                    textCapitalization: TextCapitalization.sentences,
+                    decoration: const InputDecoration(
+                      labelText: 'Alt Görevler (Opsiyonel)',
+                      hintText: 'Virgülle ayırarak yazın (örn: Araştırma, Tasarım, Kodlama)',
+                      prefixIcon: Icon(Icons.checklist_rounded),
+                    ),
+                  ),
                   const SizedBox(height: 24),
 
                   // Tarih seçimi
@@ -244,33 +264,62 @@ class _AddTaskBottomSheetState extends ConsumerState<AddTaskBottomSheet> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+                  Row(
                     children: TaskCategory.values.map((category) {
                       final isSelected = category == _selectedCategory;
-                      return ChoiceChip(
-                        selected: isSelected,
-                        onSelected: (selected) {
-                          if (selected) {
-                            setState(() => _selectedCategory = category);
-                          }
-                        },
-                        avatar: Icon(
-                          category.icon,
-                          size: 18,
-                          color: isSelected
-                              ? colorScheme.onPrimary
-                              : category.color,
-                        ),
-                        label: Text(category.title),
-                        selectedColor: category.color,
-                        labelStyle: TextStyle(
-                          color: isSelected
-                              ? colorScheme.onPrimary
-                              : colorScheme.onSurface,
-                          fontWeight:
-                              isSelected ? FontWeight.w600 : FontWeight.normal,
+                      final isLast = category == TaskCategory.values.last;
+                      return Expanded(
+                        child: Padding(
+                          padding: EdgeInsets.only(right: isLast ? 0 : 8),
+                          child: InkWell(
+                            onTap: () {
+                              setState(() => _selectedCategory = category);
+                            },
+                            borderRadius: BorderRadius.circular(12),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 12,
+                                horizontal: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? category.color.withAlpha(26)
+                                    : Colors.transparent,
+                                border: Border.all(
+                                  color: isSelected
+                                      ? category.color
+                                      : colorScheme.outlineVariant,
+                                  width: isSelected ? 2 : 1,
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    category.icon,
+                                    color: isSelected
+                                        ? category.color
+                                        : colorScheme.onSurfaceVariant,
+                                    size: 22,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    category.title,
+                                    style: textTheme.labelSmall?.copyWith(
+                                      color: isSelected
+                                          ? category.color
+                                          : colorScheme.onSurfaceVariant,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w600
+                                          : FontWeight.normal,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
                       );
                     }).toList(),

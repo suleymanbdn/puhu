@@ -1,10 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// ignore: unused_import
-import '../../../core/constants/app_constants.dart';
 import '../models/task_model.dart';
 import '../models/task_enums.dart';
 import '../repositories/task_repository.dart';
+
+// =============================================================================
+// STATE
+// =============================================================================
 
 /// Task listesi state'i
 class TaskListState {
@@ -31,6 +33,10 @@ class TaskListState {
   }
 }
 
+// =============================================================================
+// NOTIFIER
+// =============================================================================
+
 /// Task listesi notifier
 class TaskListNotifier extends StateNotifier<TaskListState> {
   final TaskRepository _repository;
@@ -44,13 +50,16 @@ class TaskListNotifier extends StateNotifier<TaskListState> {
     state = state.copyWith(isLoading: true);
     try {
       final tasks = _repository.getAllTasks();
-      // Tarihe göre sırala (en yakın önce)
       tasks.sort((a, b) => a.date.compareTo(b.date));
       state = state.copyWith(tasks: tasks, isLoading: false);
     } catch (e) {
       state = state.copyWith(error: e.toString(), isLoading: false);
     }
   }
+
+  /// Listeyi tarihe göre sıralayan yardımcı metod
+  List<Task> _sorted(List<Task> tasks) =>
+      [...tasks]..sort((a, b) => a.date.compareTo(b.date));
 
   /// Yeni görev ekler
   Future<Task> addTask({
@@ -59,6 +68,7 @@ class TaskListNotifier extends StateNotifier<TaskListState> {
     TaskCategory category = TaskCategory.personal,
     TaskPriority priority = TaskPriority.medium,
     required DateTime date,
+    List<String> subtasks = const [],
   }) async {
     final task = await _repository.addTask(
       title: title,
@@ -66,27 +76,38 @@ class TaskListNotifier extends StateNotifier<TaskListState> {
       category: category,
       priority: priority,
       date: date,
+      subtasks: subtasks,
     );
-    await loadTasks();
+    state = state.copyWith(tasks: _sorted([...state.tasks, task]));
     return task;
   }
 
   /// Görevi günceller
   Future<void> updateTask(Task task) async {
-    await _repository.updateTask(task);
-    await loadTasks();
+    final updated = await _repository.updateTask(task);
+    state = state.copyWith(
+      tasks: _sorted(
+        state.tasks.map((t) => t.id == updated.id ? updated : t).toList(),
+      ),
+    );
   }
 
   /// Görevin tamamlanma durumunu değiştirir
   Future<void> toggleCompletion(String id) async {
-    await _repository.toggleTaskCompletion(id);
-    await loadTasks();
+    final updated = await _repository.toggleTaskCompletion(id);
+    state = state.copyWith(
+      tasks: _sorted(
+        state.tasks.map((t) => t.id == updated.id ? updated : t).toList(),
+      ),
+    );
   }
 
   /// Görevi siler
   Future<void> deleteTask(String id) async {
     await _repository.deleteTask(id);
-    await loadTasks();
+    state = state.copyWith(
+      tasks: state.tasks.where((t) => t.id != id).toList(),
+    );
   }
 
   /// Belirli bir tarihteki görevleri getirir
@@ -119,9 +140,13 @@ class TaskListNotifier extends StateNotifier<TaskListState> {
   }
 }
 
-/// Task repository provider
+// =============================================================================
+// PROVIDERS
+// =============================================================================
+
+/// Task repository provider — HiveTaskRepository inject eder
 final taskRepositoryProvider = Provider<TaskRepository>((ref) {
-  return TaskRepository.instance;
+  return HiveTaskRepository();
 });
 
 /// Task listesi provider
@@ -130,6 +155,71 @@ final taskListProvider =
   final repository = ref.watch(taskRepositoryProvider);
   return TaskListNotifier(repository);
 });
+
+// =============================================================================
+// FILTER PROVIDERS — view'dan çıkarıldı, buraya taşındı
+// =============================================================================
+
+/// Görev filtre seçenekleri
+enum TaskFilter { all, today, upcoming, completed, overdue }
+
+/// Seçili durum filtresi provider'ı
+final taskFilterProvider = StateProvider<TaskFilter>((ref) => TaskFilter.all);
+
+
+
+/// Filtrelenmiş görevler provider'ı
+final filteredTasksProvider = Provider<List<Task>>((ref) {
+  final taskState = ref.watch(taskListProvider);
+  final filter = ref.watch(taskFilterProvider);
+
+  var tasks = taskState.tasks;
+
+
+  // Ana filtre
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+
+  switch (filter) {
+    case TaskFilter.all:
+      break;
+    case TaskFilter.today:
+      tasks = tasks.where((t) {
+        final taskDate = DateTime(t.date.year, t.date.month, t.date.day);
+        return taskDate == today;
+      }).toList();
+      break;
+    case TaskFilter.upcoming:
+      tasks = tasks.where((t) {
+        final taskDate = DateTime(t.date.year, t.date.month, t.date.day);
+        return taskDate.isAfter(today) && !t.isCompleted;
+      }).toList();
+      break;
+    case TaskFilter.completed:
+      tasks = tasks.where((t) => t.isCompleted).toList();
+      break;
+    case TaskFilter.overdue:
+      tasks = tasks.where((t) {
+        final taskDate = DateTime(t.date.year, t.date.month, t.date.day);
+        return taskDate.isBefore(today) && !t.isCompleted;
+      }).toList();
+      break;
+  }
+
+  // Sıralama: Önce tamamlanmamışlar, sonra tarihe göre
+  tasks.sort((a, b) {
+    if (a.isCompleted != b.isCompleted) {
+      return a.isCompleted ? 1 : -1;
+    }
+    return a.date.compareTo(b.date);
+  });
+
+  return tasks;
+});
+
+// =============================================================================
+// CALENDAR PROVIDERS
+// =============================================================================
 
 /// Seçili tarih provider'ı
 final selectedDateProvider = StateProvider<DateTime>((ref) {
@@ -140,14 +230,13 @@ final selectedDateProvider = StateProvider<DateTime>((ref) {
 final tasksForSelectedDateProvider = Provider<List<Task>>((ref) {
   final taskState = ref.watch(taskListProvider);
   final selectedDate = ref.watch(selectedDateProvider);
-  
+
   return taskState.tasks.where((task) {
     return task.date.year == selectedDate.year &&
         task.date.month == selectedDate.month &&
         task.date.day == selectedDate.day;
   }).toList()
     ..sort((a, b) {
-      // Önce tamamlanmamışlar, sonra önceliğe göre
       if (a.isCompleted != b.isCompleted) {
         return a.isCompleted ? 1 : -1;
       }
@@ -159,15 +248,12 @@ final tasksForSelectedDateProvider = Provider<List<Task>>((ref) {
 final taskDatesProvider = Provider<Map<DateTime, List<Task>>>((ref) {
   final taskState = ref.watch(taskListProvider);
   final Map<DateTime, List<Task>> events = {};
-  
+
   for (final task in taskState.tasks) {
     final date = DateTime(task.date.year, task.date.month, task.date.day);
-    if (events[date] == null) {
-      events[date] = [];
-    }
-    events[date]!.add(task);
+    events.putIfAbsent(date, () => []).add(task);
   }
-  
+
   return events;
 });
 
@@ -176,4 +262,3 @@ final taskStatisticsProvider = Provider((ref) {
   final repository = ref.watch(taskRepositoryProvider);
   return repository.getStatistics();
 });
-
