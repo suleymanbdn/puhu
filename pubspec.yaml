@@ -1,5 +1,5 @@
 name: zaman_yonetimi
-description: "YKS Pusula — sınav hazırlığı için çalışma takibi, konu yönetimi, deneme analizi"
+description: "Baykuş — YKS çalışma asistanın. Konu takibi, soru çözüm, deneme analizi, akıllı tekrar."
 publish_to: 'none'
 version: 1.0.9+21
 

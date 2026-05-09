@@ -3,7 +3,8 @@ class AppConstants {
   AppConstants._();
 
   // Uygulama Bilgileri
-  static const String appName = 'YKS Pusula';
+  static const String appName = 'Baykuş';
+  static const String appTagline = 'YKS Çalışma Asistanın';
   static const String appVersion = '1.0.0';
 
   /// Google Play paket adı (mağaza bağlantıları)

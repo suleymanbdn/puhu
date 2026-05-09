@@ -488,18 +488,18 @@ class _MotivationCard extends StatelessWidget {
 
   String get _message {
     if (todayMin >= targetMin && targetMin > 0) {
-      return '🎯 Bugünün hedefini aştın! Bonus tekrarlarla pekiştir.';
+      return '🎯 Bugünün hedefini aştın! Baykuş bile şaşırdı 🦉';
     }
     if (streak >= 7 && studiedToday) {
-      return '🔥 $streak günlük muhteşem bir seri! Aynı tempoyu koru.';
+      return '🔥 $streak günlük muhteşem bir seri! Tüy bırakma 🦉';
     }
     if (streak > 0 && !studiedToday) {
-      return '⚡ Streak\'ini kaybetme — kısa bir Pomodoro yeter.';
+      return '⚡ Baykuş seni bekliyor — kısa bir Pomodoro yeter.';
     }
     if (todayMin > 0) {
       return '💪 Güzel başlangıç! Hedefe yaklaşıyorsun.';
     }
-    return '🚀 Bugüne harika başlayalım. İlk Pomodoro\'yu başlat.';
+    return '🦉 Baykuş ile harika bir gün — ilk Pomodoro\'yu başlat.';
   }
 
   @override
