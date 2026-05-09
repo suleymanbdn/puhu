@@ -1,43 +1,58 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/theme_provider.dart';
-import '../../tasks/providers/task_provider.dart';
+import '../../exam/models/exam_profile.dart';
+import '../../exam/providers/exam_profile_provider.dart';
+import '../../mocks/providers/mock_exam_provider.dart';
+import '../../questions/providers/question_log_provider.dart';
+import '../../subjects/models/subject.dart';
+import '../../subjects/models/topic.dart';
+import '../../subjects/providers/topic_provider.dart';
 import '../../timer/providers/focus_provider.dart';
-import '../widgets/time_budget_card.dart';
 
-/// İstatistikler ekranı
+/// YKS Analiz ekranı
 class StatsView extends ConsumerWidget {
   const StatsView({super.key});
+
+  ExamTypeFilter _filter(ExamType t) {
+    switch (t) {
+      case ExamType.tyt:
+        return ExamTypeFilter.tyt;
+      case ExamType.sayisal:
+        return ExamTypeFilter.sayisal;
+      case ExamType.esitAgirlik:
+        return ExamTypeFilter.esitAgirlik;
+      case ExamType.sozel:
+        return ExamTypeFilter.sozel;
+      case ExamType.dil:
+        return ExamTypeFilter.dil;
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final profile = ref.watch(examProfileProvider);
+    if (profile == null) return const SizedBox.shrink();
 
-    final taskState = ref.watch(taskListProvider);
-    final focusHistory = ref.watch(focusHistoryProvider);
-    final todayStats = ref.watch(todayFocusStatsProvider);
-
-    // Görev istatistikleri
-    final totalTasks = taskState.tasks.length;
-    final completedTasks = taskState.tasks.where((t) => t.isCompleted).length;
-    final overdueTasks = taskState.tasks
-        .where((t) => !t.isCompleted && t.isOverdue)
-        .length;
-
-    // Odak istatistikleri
-    final todayFocusMinutes = todayStats['minutes'] as int;
-    final todaySessions = todayStats['sessions'] as int;
-
-    // Bu haftanın odak süresi
-    final weekFocusMinutes = ref.read(focusHistoryProvider.notifier).weekTotalMinutes;
+    final filter = _filter(profile.examType);
+    final subjects = Subject.forExamType(filter);
+    final topics = ref.watch(topicProvider);
+    final mockNotifier = ref.read(mockExamProvider.notifier);
+    final mocks = ref.watch(mockExamProvider);
+    final questionNotifier = ref.read(questionLogProvider.notifier);
+    ref.watch(questionLogProvider);
+    final todayFocusStats = ref.watch(todayFocusStatsProvider);
+    final weekFocusStats = ref.watch(weekFocusStatsProvider);
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const Text('İstatistikler'),
+        title: const Text('Analiz'),
         actions: [
-          // Tema değiştirme butonu
           IconButton(
             icon: Icon(
               ref.watch(themeModeNotifierProvider) == ThemeMode.dark
@@ -47,502 +62,491 @@ class StatsView extends ConsumerWidget {
             tooltip: ref.watch(themeModeNotifierProvider) == ThemeMode.dark
                 ? 'Aydınlık Mod'
                 : 'Karanlık Mod',
-            onPressed: () {
-              ref.read(themeModeNotifierProvider.notifier).toggleTheme();
-            },
+            onPressed: () =>
+                ref.read(themeModeNotifierProvider.notifier).toggleTheme(),
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 32),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Özet kartları - Görevler
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                'Görev Özeti',
-                style: textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+        children: [
+          // Sınava kalan + bugün
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  colorScheme.primary,
+                  colorScheme.primary.withAlpha(180),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
+              borderRadius: BorderRadius.circular(20),
             ),
-            Row(
+            child: Row(
               children: [
-                const SizedBox(width: 16),
                 Expanded(
-                  child: _StatCard(
-                    title: 'Toplam',
-                    value: totalTasks.toString(),
-                    icon: Icons.list_alt,
-                    color: colorScheme.primary,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'YKS\'ye',
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: Colors.white.withAlpha(220),
+                        ),
+                      ),
+                      Text(
+                        '${profile.daysUntilExam} gün',
+                        style: textTheme.displaySmall?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        profile.examType.title,
+                        style: textTheme.bodySmall?.copyWith(
+                          color: Colors.white.withAlpha(200),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _StatCard(
-                    title: 'Tamamlandı',
-                    value: completedTasks.toString(),
-                    icon: Icons.check_circle_outline,
-                    color: const Color(0xFF10B981),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _StatCard(
-                    title: 'Gecikmiş',
-                    value: overdueTasks.toString(),
-                    icon: Icons.warning_amber_outlined,
-                    color: const Color(0xFFEF4444),
-                  ),
-                ),
-                const SizedBox(width: 16),
+                const Icon(Icons.school_rounded, size: 80, color: Colors.white24),
               ],
             ),
+          ),
+          const SizedBox(height: 16),
 
-            const SizedBox(height: 24),
-
-            // Odak Modu İstatistikleri
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'Odak Modu',
-                style: textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+          // Bugün özet kartları
+          Row(
+            children: [
+              Expanded(
+                child: _MetricCard(
+                  icon: Icons.timer_outlined,
+                  label: 'Bugün',
+                  value: _formatMinutes(todayFocusStats['minutes'] ?? 0),
+                  sub: '${todayFocusStats['sessions'] ?? 0} oturum',
+                  color: colorScheme.primary,
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _FocusStatCard(
-                    title: 'Bugün',
-                    minutes: todayFocusMinutes,
-                    sessions: todaySessions,
-                    color: colorScheme.primary,
-                    icon: Icons.today,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _FocusStatCard(
-                    title: 'Bu Hafta',
-                    minutes: weekFocusMinutes,
-                    sessions: ref.read(focusHistoryProvider.notifier).thisWeekSessions.length,
-                    color: const Color(0xFF8B5CF6),
-                    icon: Icons.date_range,
-                  ),
-                ),
-                const SizedBox(width: 16),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
-            // Zaman Bütçesi
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'Zaman Bütçesi',
-                style: textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+              const SizedBox(width: 10),
+              Expanded(
+                child: _MetricCard(
+                  icon: Icons.calendar_view_week,
+                  label: 'Bu Hafta',
+                  value: _formatMinutes(weekFocusStats['minutes'] ?? 0),
+                  sub: '${weekFocusStats['sessions'] ?? 0} oturum',
+                  color: const Color(0xFF8B5CF6),
                 ),
               ),
-            ),
-            const SizedBox(height: 8),
-            const TimeBudgetCard(),
-
-            const SizedBox(height: 24),
-
-            // Tamamlanma oranı
-            _CompletionRateCard(
-              completed: completedTasks,
-              total: totalTasks,
-            ),
-
-            const SizedBox(height: 24),
-
-            // Son odak oturumları
-            if (focusHistory.isNotEmpty) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Text(
-                      'Son Odak Oturumları',
-                      style: textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      '${focusHistory.length} oturum',
-                      style: textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              ...focusHistory.take(5).map((session) => _FocusSessionItem(
-                    session: session,
-                  )),
             ],
-
-            // Motivasyon mesajı
-            if (completedTasks > 0 || todayFocusMinutes > 0)
-              _MotivationCard(
-                completedTasks: completedTasks,
-                focusMinutes: todayFocusMinutes,
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _MetricCard(
+                  icon: Icons.edit_note,
+                  label: 'Bugün Soru',
+                  value: '${questionNotifier.todayTotalQuestions}',
+                  sub: '${questionNotifier.todayTotalNet.toStringAsFixed(1)} net',
+                  color: const Color(0xFF10B981),
+                ),
               ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _MetricCard(
+                  icon: Icons.assessment_outlined,
+                  label: 'Son Deneme',
+                  value: mockNotifier.lastNet?.toStringAsFixed(1) ?? '—',
+                  sub: 'Ort: ${mocks.isEmpty ? '—' : mockNotifier.averageNet.toStringAsFixed(1)}',
+                  color: const Color(0xFFEF4444),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 24),
+
+          // Net gelişim grafiği (varsa)
+          if (mocks.length >= 2) ...[
+            _NetTrendCard(
+              spots: [
+                for (var i = 0; i < mocks.length; i++)
+                  FlSpot(i.toDouble(), mocks[i].totalNet),
+              ],
+              targetNet: profile.targetNet,
+            ),
+            const SizedBox(height: 24),
           ],
-        ),
+
+          // Ders bazlı çalışma dağılımı
+          Text('Ders Dağılımı (Toplam Çalışma)',
+              style: textTheme.titleSmall
+                  ?.copyWith(color: colorScheme.onSurfaceVariant)),
+          const SizedBox(height: 8),
+          _SubjectDistributionCard(subjects: subjects, topics: topics),
+          const SizedBox(height: 24),
+
+          // Konu zayıflık analizi
+          _WeakTopicsCard(topics: topics),
+        ],
       ),
     );
   }
+
+  String _formatMinutes(int m) {
+    if (m < 60) return '${m}dk';
+    final h = m ~/ 60;
+    final r = m % 60;
+    return r == 0 ? '${h}sa' : '${h}sa ${r}dk';
+  }
 }
 
-/// İstatistik kartı widget'ı
-class _StatCard extends StatelessWidget {
-  const _StatCard({
-    required this.title,
-    required this.value,
+class _MetricCard extends StatelessWidget {
+  const _MetricCard({
     required this.icon,
+    required this.label,
+    required this.value,
+    required this.sub,
     required this.color,
   });
 
-  final String title;
-  final String value;
   final IconData icon;
+  final String label;
+  final String value;
+  final String sub;
   final Color color;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: color.withAlpha(20),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: color.withAlpha(50),
-          width: 1,
-        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 22),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: colorScheme.onSurface,
-            ),
+          Row(
+            children: [
+              Icon(icon, color: color, size: 18),
+              const SizedBox(width: 6),
+              Text(label,
+                  style: textTheme.labelSmall?.copyWith(color: color)),
+            ],
           ),
-          Text(
-            title,
-            style: textTheme.labelSmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
+          const SizedBox(height: 6),
+          Text(value,
+              style: textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: color,
+              )),
+          Text(sub,
+              style: textTheme.labelSmall?.copyWith(
+                color: color.withAlpha(180),
+              )),
         ],
       ),
     );
   }
 }
 
-/// Odak modu istatistik kartı
-class _FocusStatCard extends StatelessWidget {
-  const _FocusStatCard({
-    required this.title,
-    required this.minutes,
-    required this.sessions,
-    required this.color,
-    required this.icon,
-  });
-
-  final String title;
-  final int minutes;
-  final int sessions;
-  final Color color;
-  final IconData icon;
+class _NetTrendCard extends StatelessWidget {
+  const _NetTrendCard({required this.spots, this.targetNet});
+  final List<FlSpot> spots;
+  final double? targetNet;
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
-
-    final hours = minutes ~/ 60;
-    final mins = minutes % 60;
-    final timeStr = hours > 0 ? '${hours}s ${mins}dk' : '${mins}dk';
+    final textTheme = Theme.of(context).textTheme;
+    final maxY = spots.map((s) => s.y).fold<double>(
+          targetNet ?? 0,
+          (a, b) => a > b ? a : b,
+        );
+    final yMax = (maxY * 1.15).ceilToDouble().clamp(10, 600).toDouble();
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            color.withAlpha(25),
-            color.withAlpha(10),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: color.withAlpha(50),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Net Gelişimi',
+              style: textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          AspectRatio(
+            aspectRatio: 2,
+            child: LineChart(
+              LineChartData(
+                minY: 0,
+                maxY: yMax,
+                titlesData: const FlTitlesData(show: false),
+                gridData: const FlGridData(show: false),
+                borderData: FlBorderData(show: false),
+                extraLinesData: targetNet != null
+                    ? ExtraLinesData(horizontalLines: [
+                        HorizontalLine(
+                          y: targetNet!,
+                          color: const Color(0xFF10B981),
+                          strokeWidth: 1,
+                          dashArray: [4, 4],
+                        ),
+                      ])
+                    : const ExtraLinesData(),
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: spots,
+                    isCurved: true,
+                    color: colorScheme.primary,
+                    barWidth: 3,
+                    dotData: const FlDotData(show: false),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          colorScheme.primary.withAlpha(60),
+                          colorScheme.primary.withAlpha(0),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SubjectDistributionCard extends StatelessWidget {
+  const _SubjectDistributionCard({
+    required this.subjects,
+    required this.topics,
+  });
+  final List<Subject> subjects;
+  final List<Topic> topics;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    final minutesBySubject = <Subject, int>{};
+    for (final s in subjects) {
+      minutesBySubject[s] = topics
+          .where((t) => t.subjectId == s.id)
+          .fold<int>(0, (sum, t) => sum + t.totalMinutes);
+    }
+    final total =
+        minutesBySubject.values.fold<int>(0, (a, b) => a + b);
+
+    if (total == 0) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
         ),
+        child: Column(
+          children: [
+            Icon(Icons.pie_chart_outline,
+                size: 40, color: colorScheme.outlineVariant),
+            const SizedBox(height: 8),
+            Text(
+              'Henüz çalışma kaydı yok',
+              style: textTheme.bodySmall
+                  ?.copyWith(color: colorScheme.onSurfaceVariant),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // En çok çalışılan ilk 6 ders
+    final sorted = minutesBySubject.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final top = sorted.take(8).where((e) => e.value > 0).toList();
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        children: top.map((entry) {
+          final ratio = entry.value / total;
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Row(
+              children: [
+                Icon(entry.key.icon, color: entry.key.color, size: 16),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 110,
+                  child: Text(
+                    entry.key.title,
+                    style: textTheme.bodySmall,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: ratio,
+                      minHeight: 6,
+                      backgroundColor: entry.key.color.withAlpha(20),
+                      color: entry.key.color,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 64,
+                  child: Text(
+                    _formatMinutes(entry.value),
+                    style: textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    textAlign: TextAlign.end,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  String _formatMinutes(int m) {
+    if (m < 60) return '${m}dk';
+    final h = m ~/ 60;
+    final r = m % 60;
+    return r == 0 ? '${h}sa' : '${h}sa ${r}dk';
+  }
+}
+
+class _WeakTopicsCard extends StatelessWidget {
+  const _WeakTopicsCard({required this.topics});
+  final List<Topic> topics;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    // Yanlış oranı yüksek ilk 5 konu (en az 5 soru çözülmüş olanlar arası)
+    final weak = topics
+        .where((t) => t.questionsSolved >= 5 && t.correctRatio < 0.6)
+        .toList()
+      ..sort((a, b) => a.correctRatio.compareTo(b.correctRatio));
+    final top = weak.take(5).toList();
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, color: color, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: textTheme.labelMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
+              const Icon(Icons.warning_amber_outlined,
+                  size: 18, color: Color(0xFFEF4444)),
+              const SizedBox(width: 6),
+              Text('Zayıf Konular',
+                  style: textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.bold)),
             ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            timeStr,
-            style: textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
           ),
           const SizedBox(height: 4),
           Text(
-            '$sessions oturum',
+            'En az 5 soru çözülmüş, doğru oranı %60 altı',
             style: textTheme.labelSmall?.copyWith(
               color: colorScheme.onSurfaceVariant,
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Tamamlanma oranı kartı
-class _CompletionRateCard extends StatelessWidget {
-  const _CompletionRateCard({
-    required this.completed,
-    required this.total,
-  });
-
-  final int completed;
-  final int total;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    final rate = total > 0 ? (completed / total) : 0.0;
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withAlpha(50),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withAlpha(100),
-        ),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Text(
-                'Tamamlanma Oranı',
-                style: textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const Spacer(),
-              Text(
-                '${(rate * 100).round()}%',
-                style: textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: rate >= 0.7
-                      ? const Color(0xFF10B981)
-                      : rate >= 0.4
-                          ? const Color(0xFFF59E0B)
-                          : colorScheme.error,
-                ),
-              ),
-            ],
-          ),
           const SizedBox(height: 12),
-          // Progress bar
-          Stack(
-            children: [
-              Container(
-                height: 10,
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(5),
-                ),
-              ),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 500),
-                height: 10,
-                width: MediaQuery.of(context).size.width * 0.85 * rate,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      rate >= 0.7
-                          ? const Color(0xFF10B981)
-                          : rate >= 0.4
-                              ? const Color(0xFFF59E0B)
-                              : colorScheme.error,
-                      rate >= 0.7
-                          ? const Color(0xFF10B981).withAlpha(180)
-                          : rate >= 0.4
-                              ? const Color(0xFFF59E0B).withAlpha(180)
-                              : colorScheme.error.withAlpha(180),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(5),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Odak oturumu öğesi
-class _FocusSessionItem extends StatelessWidget {
-  const _FocusSessionItem({required this.session});
-
-  final dynamic session;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withAlpha(100),
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: session.type.color.withAlpha(20),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              session.type == session.type
-                  ? Icons.work_outline
-                  : Icons.coffee_outlined,
-              color: session.type.color,
-              size: 18,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  session.type.title,
-                  style: textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Text(
-                  '${session.actualMinutes}dk odaklanma',
-                  style: textTheme.labelSmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (session.mood != null)
+          if (top.isEmpty)
             Text(
-              session.mood!.emoji,
-              style: const TextStyle(fontSize: 24),
-            ),
+              'Henüz yeterli veri yok 👍',
+              style: textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            )
+          else
+            ...top.map((t) {
+              final subject = Subject.fromId(t.subjectId);
+              final ratio = t.correctRatio;
+              final color = subject?.color ?? colorScheme.primary;
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEF4444),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(t.name,
+                              style: textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w500,
+                              )),
+                          Text(
+                            '${subject?.title ?? t.subjectId} · ${t.questionsSolved} soru',
+                            style: textTheme.labelSmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: color.withAlpha(30),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '%${(ratio * 100).toStringAsFixed(0)}',
+                        style: textTheme.labelMedium?.copyWith(
+                          color: color,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
         ],
-      ),
-    );
-  }
-}
-
-/// Motivasyon kartı
-class _MotivationCard extends StatelessWidget {
-  const _MotivationCard({
-    required this.completedTasks,
-    required this.focusMinutes,
-  });
-
-  final int completedTasks;
-  final int focusMinutes;
-
-  String get _message {
-    if (focusMinutes >= 120 && completedTasks >= 5) {
-      return '🌟 İnanılmaz bir gün geçiriyorsun! Enerjin ve odağın muhteşem!';
-    } else if (focusMinutes >= 60 || completedTasks >= 3) {
-      return '💪 Harika gidiyorsun! Hedeflerine doğru kararlı adımlarla ilerliyorsun.';
-    } else if (focusMinutes > 0 || completedTasks > 0) {
-      return '🎯 İyi bir başlangıç! Her adım seni hedefine yaklaştırıyor.';
-    }
-    return '🚀 Bugün harika şeyler başarabilirsin! Başlamak için bir görev seç.';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            colorScheme.primaryContainer.withAlpha(100),
-            colorScheme.tertiaryContainer.withAlpha(80),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        _message,
-        style: textTheme.bodyLarge?.copyWith(
-          color: colorScheme.onPrimaryContainer,
-          fontWeight: FontWeight.w500,
-        ),
-        textAlign: TextAlign.center,
       ),
     );
   }

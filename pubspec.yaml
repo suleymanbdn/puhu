@@ -1,7 +1,7 @@
 name: zaman_yonetimi
 description: "Zaman Yönetimi ve Üretkenlik Uygulaması"
 publish_to: 'none'
-version: 1.0.0+3
+version: 1.0.9+21
 
 environment:
   sdk: ^3.5.0
@@ -26,8 +26,15 @@ dependencies:
   uuid: ^4.4.2
   
   # UI
+  google_fonts: ^6.2.1
   cupertino_icons: ^1.0.8
   table_calendar: ^3.1.2
+  package_info_plus: ^9.0.1
+  url_launcher: ^6.3.2
+  in_app_update: ^4.2.5
+  flutter_local_notifications: ^21.0.0
+  timezone: ^0.11.0
+  fl_chart: ^1.2.0
 
 dev_dependencies:
   flutter_test:
@@ -44,7 +51,7 @@ dev_dependencies:
 
 flutter_launcher_icons:
   android: "launcher_icon"
-  ios: true
+  ios: false
   image_path: "assets/icon/app_icon.png"
   min_sdk_android: 21
   adaptive_icon_background: "#0F172A"

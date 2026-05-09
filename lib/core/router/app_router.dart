@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/exam/providers/exam_profile_provider.dart';
+import '../../features/mocks/views/mock_exam_view.dart';
 import '../../features/onboarding/views/onboarding_view.dart';
 import '../../features/questions/views/question_log_view.dart';
 import '../../features/subjects/views/subjects_view.dart';
@@ -66,6 +67,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final id = state.pathParameters['id'] ?? '';
           return TopicListView(subjectId: id);
         },
+      ),
+      // Denemeler ekranı - shell dışında stack içinde açılır
+      GoRoute(
+        path: '/mocks',
+        name: 'mocks',
+        builder: (context, state) => const MockExamView(),
       ),
       // Shell route - Alt navigasyon barı için
       StatefulShellRoute.indexedStack(

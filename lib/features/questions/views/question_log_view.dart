@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../exam/models/exam_profile.dart';
@@ -40,7 +41,16 @@ class QuestionLogView extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: AppBar(title: const Text('Soru Çözüm')),
+      appBar: AppBar(
+        title: const Text('Soru Çözüm'),
+        actions: [
+          IconButton(
+            tooltip: 'Denemeler',
+            icon: const Icon(Icons.assessment_outlined),
+            onPressed: () => context.push('/mocks'),
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
         children: [
