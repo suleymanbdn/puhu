@@ -8,7 +8,7 @@ class AppConstants {
   static const String appVersion = '1.0.0';
 
   /// Google Play paket adı (mağaza bağlantıları)
-  static const String androidApplicationId = 'com.zamanyonetimi.app';
+  static const String androidApplicationId = 'com.baykus.app';
 
   static const String playStoreListingUrl =
       'https://play.google.com/store/apps/details?id=$androidApplicationId';
