@@ -5,6 +5,9 @@ import 'package:uuid/uuid.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/services/settings_provider.dart';
+import '../../exam/models/exam_profile.dart';
+import '../../exam/providers/exam_profile_provider.dart';
+import '../../subjects/models/subject.dart';
 import '../models/focus_session.dart';
 import '../models/time_budget.dart';
 import '../../tasks/models/task_enums.dart';
@@ -267,9 +270,18 @@ class TimeBudgetState {
 }
 
 class TimeBudgetNotifier extends StateNotifier<TimeBudgetState> {
-  TimeBudgetNotifier() : super(const TimeBudgetState()) {
+  TimeBudgetNotifier(this.ref) : super(const TimeBudgetState()) {
     _loadBudgets();
+    // ExamProfile değiştiğinde bütçeleri yeniden hesapla
+    ref.listen<ExamProfile?>(examProfileProvider, (prev, next) {
+      if (next == null) return;
+      if (prev?.examType != next.examType) {
+        _regenerateForCurrentWeek();
+      }
+    });
   }
+
+  final Ref ref;
 
   Box<TimeBudget> get _box => Hive.box<TimeBudget>(AppConstants.timeBudgetsBox);
 
@@ -278,6 +290,24 @@ class TimeBudgetNotifier extends StateNotifier<TimeBudgetState> {
     final now = DateTime.now();
     final daysToSubtract = now.weekday - 1;
     return DateTime(now.year, now.month, now.day - daysToSubtract);
+  }
+
+  /// Aktif sınav tipini ExamProfile'dan al, yoksa varsayılan olarak sayısal
+  ExamTypeFilter get _activeExamType {
+    final profile = ref.read(examProfileProvider);
+    if (profile == null) return ExamTypeFilter.sayisal;
+    switch (profile.examType) {
+      case ExamType.tyt:
+        return ExamTypeFilter.tyt;
+      case ExamType.sayisal:
+        return ExamTypeFilter.sayisal;
+      case ExamType.esitAgirlik:
+        return ExamTypeFilter.esitAgirlik;
+      case ExamType.sozel:
+        return ExamTypeFilter.sozel;
+      case ExamType.dil:
+        return ExamTypeFilter.dil;
+    }
   }
 
   /// Bütçeleri yükle
@@ -294,9 +324,17 @@ class TimeBudgetNotifier extends StateNotifier<TimeBudgetState> {
 
       // Eğer bu hafta için bütçe yoksa, varsayılanları oluştur
       if (budgets.isEmpty) {
-        budgets = DefaultBudgets.createDefaults(weekStart);
-        for (final budget in budgets) {
-          await _box.put(budget.id, budget);
+        final profile = ref.read(examProfileProvider);
+        // Profil yoksa boş liste; onboarding sonrası regenerate edilecek
+        if (profile != null) {
+          budgets = DefaultBudgets.forExamType(
+            _activeExamType,
+            weekStart,
+            weeklyTotalHours: profile.weeklyTargetHours,
+          );
+          for (final budget in budgets) {
+            await _box.put(budget.id, budget);
+          }
         }
       }
 
@@ -304,6 +342,40 @@ class TimeBudgetNotifier extends StateNotifier<TimeBudgetState> {
     } catch (e) {
       state = state.copyWith(isLoading: false);
     }
+  }
+
+  /// Bu haftanın bütçelerini sınav tipine göre yeniden oluşturur
+  /// (eski hafta bütçeleri korunur — yeni hafta sıfırdan oluşur)
+  Future<void> _regenerateForCurrentWeek() async {
+    final weekStart = _currentWeekStart;
+    final profile = ref.read(examProfileProvider);
+    if (profile == null) return;
+
+    // Bu haftanın eski bütçelerini sil
+    final toDelete = _box.values.where((b) {
+      return b.weekStartDate.year == weekStart.year &&
+          b.weekStartDate.month == weekStart.month &&
+          b.weekStartDate.day == weekStart.day;
+    }).map((b) => b.id).toList();
+    for (final id in toDelete) {
+      await _box.delete(id);
+    }
+
+    // Yenilerini oluştur
+    final fresh = DefaultBudgets.forExamType(
+      _activeExamType,
+      weekStart,
+      weeklyTotalHours: profile.weeklyTargetHours,
+    );
+    for (final b in fresh) {
+      await _box.put(b.id, b);
+    }
+    state = state.copyWith(budgets: fresh);
+  }
+
+  /// Onboarding'den sonra çağrılır — ilk bütçeleri oluşturur
+  Future<void> initializeForExamType() async {
+    await _regenerateForCurrentWeek();
   }
 
   /// Bütçeye süre ekle
@@ -425,7 +497,7 @@ final focusTimerProvider =
 /// Time budget provider
 final timeBudgetProvider =
     StateNotifierProvider<TimeBudgetNotifier, TimeBudgetState>((ref) {
-  return TimeBudgetNotifier();
+  return TimeBudgetNotifier(ref);
 });
 
 /// Focus history provider

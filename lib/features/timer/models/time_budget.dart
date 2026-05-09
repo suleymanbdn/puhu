@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
-import '../../tasks/models/task_enums.dart';
+import '../../subjects/models/subject.dart';
 
 part 'time_budget.g.dart';
 
@@ -63,34 +63,23 @@ class TimeBudget extends HiveObject {
   /// Hedef tamamlandı mı?
   bool get isCompleted => spentMinutes >= targetMinutesPerWeek;
 
-  /// Kategori rengi
+  /// Subject (categoryName aslında Subject.id)
+  Subject? get subject => Subject.fromId(categoryName);
+
+  /// Kategori rengi (Subject'ten)
   Color get color {
     if (customColor != null) return customColor!;
-    
-    // TaskCategory'den renk al
-    try {
-      final category = TaskCategory.values.firstWhere(
-        (c) => c.title == categoryName || c.name == categoryName.toLowerCase(),
-      );
-      return category.color;
-    } catch (_) {
-      return const Color(0xFF6366F1);
-    }
+    return subject?.color ?? const Color(0xFF6366F1);
   }
 
-  /// Kategori ikonu
+  /// Kategori ikonu (Subject'ten)
   IconData get icon {
     if (customIcon != null) return customIcon!;
-    
-    try {
-      final category = TaskCategory.values.firstWhere(
-        (c) => c.title == categoryName || c.name == categoryName.toLowerCase(),
-      );
-      return category.icon;
-    } catch (_) {
-      return Icons.timer_outlined;
-    }
+    return subject?.icon ?? Icons.timer_outlined;
   }
+
+  /// Görüntülenecek isim (Subject.title varsa onu döndür)
+  String get displayName => subject?.title ?? categoryName;
 
   TimeBudget copyWith({
     String? id,
@@ -113,35 +102,38 @@ class TimeBudget extends HiveObject {
   }
 }
 
-/// Varsayılan kategori bütçeleri
+/// YKS dersleri için varsayılan haftalık zaman bütçeleri
+///
+/// Dersin soru sayısına göre proportionel olarak hedef saat ataması yapar.
+/// Toplam hedef ~30 saat/hafta (4-5 saat/gün) varsayılıdır; kullanıcı
+/// onboarding sonrasında ayarlayabilir.
 class DefaultBudgets {
-  static List<TimeBudget> createDefaults(DateTime weekStart) {
-    return [
-      TimeBudget(
-        id: 'work_budget',
-        categoryName: 'İş',
-        targetMinutesPerWeek: 30 * 60, // 30 saat
+  /// Bir sınav tipi için ders bütçeleri oluşturur
+  static List<TimeBudget> forExamType(
+    ExamTypeFilter examType,
+    DateTime weekStart, {
+    double weeklyTotalHours = 30,
+  }) {
+    final subjects = Subject.forExamType(examType);
+    if (subjects.isEmpty) return [];
+
+    final totalQuestions =
+        subjects.fold<int>(0, (sum, s) => sum + s.questionCount);
+    final totalMinutes = (weeklyTotalHours * 60).round();
+
+    return subjects.map((s) {
+      // Soru sayısı oranında dakika tahsis et, minimum 60 dk
+      final share = totalQuestions == 0
+          ? totalMinutes ~/ subjects.length
+          : (totalMinutes * s.questionCount / totalQuestions).round();
+      final allocated = share < 60 ? 60 : share;
+      return TimeBudget(
+        id: '${s.id}_budget',
+        categoryName: s.id,
+        targetMinutesPerWeek: allocated,
         weekStartDate: weekStart,
-      ),
-      TimeBudget(
-        id: 'study_budget',
-        categoryName: 'Eğitim',
-        targetMinutesPerWeek: 10 * 60, // 10 saat
-        weekStartDate: weekStart,
-      ),
-      TimeBudget(
-        id: 'personal_budget',
-        categoryName: 'Kişisel',
-        targetMinutesPerWeek: 5 * 60, // 5 saat
-        weekStartDate: weekStart,
-      ),
-      TimeBudget(
-        id: 'health_budget',
-        categoryName: 'Sağlık',
-        targetMinutesPerWeek: 7 * 60, // 7 saat
-        weekStartDate: weekStart,
-      ),
-    ];
+      );
+    }).toList();
   }
 }
 

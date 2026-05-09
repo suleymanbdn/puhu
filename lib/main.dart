@@ -11,6 +11,8 @@ import 'core/services/notification_service.dart';
 import 'core/services/settings_provider.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_provider.dart';
+import 'features/exam/models/exam_profile.dart';
+import 'features/subjects/models/topic.dart';
 import 'features/update/providers/store_update_provider.dart';
 import 'features/update/views/update_prompt_page.dart';
 import 'features/tasks/models/task_model.dart';
@@ -63,6 +65,12 @@ Future<void> _initHive() async {
 
     // Time budget adapter'ı
     if (!Hive.isAdapterRegistered(6)) Hive.registerAdapter(TimeBudgetAdapter());
+
+    // YKS adapter'ları
+    if (!Hive.isAdapterRegistered(7)) Hive.registerAdapter(TopicStatusAdapter());
+    if (!Hive.isAdapterRegistered(8)) Hive.registerAdapter(TopicAdapter());
+    if (!Hive.isAdapterRegistered(9)) Hive.registerAdapter(ExamTypeAdapter());
+    if (!Hive.isAdapterRegistered(10)) Hive.registerAdapter(ExamProfileAdapter());
   } on ArgumentError catch (e) {
     // Adapter zaten kayıtlıysa güvenle devam et
     debugPrint('Adapter already registered: $e');
@@ -73,6 +81,8 @@ Future<void> _initHive() async {
     Hive.openBox<Task>(AppConstants.tasksBox),
     Hive.openBox<FocusSession>(AppConstants.focusSessionsBox),
     Hive.openBox<TimeBudget>(AppConstants.timeBudgetsBox),
+    Hive.openBox<Topic>(AppConstants.topicsBox),
+    Hive.openBox<ExamProfile>(AppConstants.examProfileBox),
   ]);
 }
 
