@@ -58,6 +58,11 @@ class MainScaffold extends StatelessWidget {
             },
             destinations: const [
               NavigationDestination(
+                icon: Icon(Icons.home_outlined),
+                selectedIcon: Icon(Icons.home_rounded),
+                label: 'Anasayfa',
+              ),
+              NavigationDestination(
                 icon: Icon(Icons.menu_book_outlined),
                 selectedIcon: Icon(Icons.menu_book_rounded),
                 label: 'Dersler',
@@ -73,19 +78,9 @@ class MainScaffold extends StatelessWidget {
                 label: 'Soru',
               ),
               NavigationDestination(
-                icon: Icon(Icons.calendar_month_outlined),
-                selectedIcon: Icon(Icons.calendar_month_rounded),
-                label: 'Takvim',
-              ),
-              NavigationDestination(
                 icon: Icon(Icons.bar_chart_outlined),
                 selectedIcon: Icon(Icons.bar_chart_rounded),
                 label: 'Analiz',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.settings_outlined),
-                selectedIcon: Icon(Icons.settings_rounded),
-                label: 'Ayarlar',
               ),
             ],
           ),

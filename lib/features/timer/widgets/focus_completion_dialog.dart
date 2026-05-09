@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/services/notification_service.dart';
+import '../../subjects/models/subject.dart';
 import '../../subjects/providers/topic_provider.dart';
 import '../models/focus_session.dart';
 import '../providers/focus_provider.dart';
@@ -100,6 +102,21 @@ class _FocusCompletionDialogState extends ConsumerState<FocusCompletionDialog>
           await ref
               .read(topicProvider.notifier)
               .addStudyTime(topicId, widget.elapsedMinutes);
+
+          // 3) Spaced repetition tekrar bildirimleri planla
+          final topic = ref
+              .read(topicProvider)
+              .where((t) => t.id == topicId)
+              .firstOrNull;
+          if (topic != null) {
+            final subject = Subject.fromId(topic.subjectId);
+            await NotificationService.instance.scheduleTopicReview(
+              topicId: topic.id,
+              topicName: topic.name,
+              subjectTitle: subject?.title ?? topic.subjectId,
+              studiedAt: DateTime.now(),
+            );
+          }
         }
       }
 

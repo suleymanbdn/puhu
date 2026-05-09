@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/services/notification_service.dart';
 import '../../exam/models/exam_profile.dart';
 import '../../exam/providers/exam_profile_provider.dart';
 import '../../subjects/models/subject.dart';
@@ -94,6 +95,10 @@ class _OnboardingViewState extends ConsumerState<OnboardingView> {
           .ensureTopicsForExamType(_examTypeToFilter(_selectedExamType!));
       // Time budget'ları yeniden oluştur
       await ref.read(timeBudgetProvider.notifier).initializeForExamType();
+
+      // Bildirimleri planla
+      await NotificationService.instance.scheduleExamReminders(_examDate);
+      await NotificationService.instance.scheduleDailyReminder();
 
       if (mounted) {
         context.go('/tasks');

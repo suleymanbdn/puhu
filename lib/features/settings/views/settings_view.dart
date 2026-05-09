@@ -1,0 +1,457 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+
+import '../../../core/services/notification_service.dart';
+import '../../../core/services/settings_provider.dart';
+import '../../../shared/widgets/glass_container.dart';
+import '../../exam/providers/exam_profile_provider.dart';
+
+class SettingsView extends ConsumerWidget {
+  const SettingsView({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
+    final notifier = ref.read(settingsProvider.notifier);
+    final profile = ref.watch(examProfileProvider);
+    final profileNotifier = ref.read(examProfileProvider.notifier);
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        title: const Text('Ayarlar'),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+        children: [
+          // ============= YKS PROFİL =============
+          if (profile != null) ...[
+            const _SectionTitle(title: 'YKS Profili'),
+            GlassContainer(
+              color: colorScheme.surface,
+              borderRadius: BorderRadius.circular(14),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: profile.examType.color.withAlpha(40),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(profile.examType.icon,
+                            color: profile.examType.color, size: 24),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(profile.examType.title,
+                                style: textTheme.titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.bold)),
+                            Text(
+                              '${profile.daysUntilExam} gün kaldı',
+                              style: textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  // Sınav tarihi
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.event_outlined,
+                        color: colorScheme.primary),
+                    title: Text('Sınav Tarihi',
+                        style: textTheme.bodyMedium
+                            ?.copyWith(fontWeight: FontWeight.w500)),
+                    subtitle: Text(
+                      DateFormat('d MMMM yyyy', 'tr_TR')
+                          .format(profile.examDate),
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: profile.examDate,
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime.now()
+                            .add(const Duration(days: 365 * 3)),
+                      );
+                      if (picked != null) {
+                        await profileNotifier.updateExamDate(picked);
+                        await NotificationService.instance
+                            .scheduleExamReminders(picked);
+                      }
+                    },
+                  ),
+                  const Divider(height: 1),
+                  // Günlük hedef
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.flag_outlined,
+                                color: colorScheme.primary, size: 20),
+                            const SizedBox(width: 12),
+                            Text('Günlük Hedef',
+                                style: textTheme.bodyMedium
+                                    ?.copyWith(fontWeight: FontWeight.w500)),
+                            const Spacer(),
+                            Text(
+                              '${profile.dailyTargetHours.toStringAsFixed(1)} sa',
+                              style: textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: colorScheme.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Slider(
+                          value: profile.dailyTargetHours,
+                          min: 1,
+                          max: 12,
+                          divisions: 22,
+                          label:
+                              '${profile.dailyTargetHours.toStringAsFixed(1)} sa',
+                          onChanged: (v) async {
+                            await profileNotifier.updateDailyTarget(v);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  // Hedef bilgileri
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.school_outlined,
+                        color: colorScheme.primary),
+                    title: Text('Hedef',
+                        style: textTheme.bodyMedium
+                            ?.copyWith(fontWeight: FontWeight.w500)),
+                    subtitle: Text(
+                      [
+                        if (profile.targetUniversity != null)
+                          profile.targetUniversity!,
+                        if (profile.targetDepartment != null)
+                          profile.targetDepartment!,
+                        if (profile.targetNet != null)
+                          '${profile.targetNet!.toStringAsFixed(0)} net',
+                      ].join(' • '),
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _showTargetDialog(context, ref),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Profil sıfırla
+            TextButton.icon(
+              onPressed: () => _confirmReset(context, ref),
+              style: TextButton.styleFrom(foregroundColor: colorScheme.error),
+              icon: const Icon(Icons.restart_alt),
+              label: const Text('Profili Sıfırla (Onboarding)'),
+            ),
+          ],
+
+          const SizedBox(height: 24),
+          // ============= POMODORO =============
+          const _SectionTitle(title: 'Pomodoro Süreleri'),
+          _DurationTile(
+            title: 'Çalışma (Odak)',
+            value: settings.workDuration,
+            icon: Icons.work_outline_rounded,
+            color: colorScheme.primary,
+            onChanged: (val) => notifier.setWorkDuration(val.round()),
+            min: 5,
+            max: 120,
+          ),
+          _DurationTile(
+            title: 'Kısa Mola',
+            value: settings.shortBreakDuration,
+            icon: Icons.coffee_outlined,
+            color: const Color(0xFF10B981),
+            onChanged: (val) => notifier.setShortBreakDuration(val.round()),
+            min: 1,
+            max: 30,
+          ),
+          _DurationTile(
+            title: 'Uzun Mola',
+            value: settings.longBreakDuration,
+            icon: Icons.weekend_outlined,
+            color: const Color(0xFF8B5CF6),
+            onChanged: (val) => notifier.setLongBreakDuration(val.round()),
+            min: 5,
+            max: 60,
+          ),
+
+          const SizedBox(height: 24),
+          // ============= AKIŞ + BİLDİRİM =============
+          const _SectionTitle(title: 'Akış ve Bildirimler'),
+          GlassContainer(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(14),
+            child: Column(
+              children: [
+                SwitchListTile(
+                  title: Text('Otomatik Geçiş',
+                      style: textTheme.bodyMedium
+                          ?.copyWith(fontWeight: FontWeight.w600)),
+                  subtitle: Text(
+                      'Süre bitince mola/çalışma otomatik başlasın',
+                      style: textTheme.bodySmall),
+                  value: settings.autoFlow,
+                  onChanged: notifier.setAutoFlow,
+                  activeThumbColor: colorScheme.primary,
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16),
+                ),
+                Divider(
+                    height: 1,
+                    color: colorScheme.outlineVariant.withAlpha(50)),
+                SwitchListTile(
+                  title: Text('Bildirimler',
+                      style: textTheme.bodyMedium
+                          ?.copyWith(fontWeight: FontWeight.w600)),
+                  subtitle: Text(
+                      'Pomodoro, tekrar ve sınav uyarıları',
+                      style: textTheme.bodySmall),
+                  value: settings.notificationsEnabled,
+                  onChanged: (v) async {
+                    notifier.setNotificationsEnabled(v);
+                    if (!v) {
+                      await NotificationService.instance.cancelAll();
+                    } else if (profile != null) {
+                      await NotificationService.instance
+                          .scheduleExamReminders(profile.examDate);
+                      await NotificationService.instance
+                          .scheduleDailyReminder();
+                    }
+                  },
+                  activeThumbColor: colorScheme.primary,
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 24),
+          // ============= EKSTRA =============
+          const _SectionTitle(title: 'Diğer'),
+          ListTile(
+            leading: const Icon(Icons.calendar_month_outlined),
+            title: const Text('Takvim'),
+            subtitle: const Text('Görev ve deneme tarihleri görünümü'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/calendar'),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            tileColor: colorScheme.surface,
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showTargetDialog(BuildContext context, WidgetRef ref) {
+    final profile = ref.read(examProfileProvider);
+    if (profile == null) return;
+
+    final uniController =
+        TextEditingController(text: profile.targetUniversity);
+    final deptController =
+        TextEditingController(text: profile.targetDepartment);
+    final netController = TextEditingController(
+        text: profile.targetNet?.toStringAsFixed(0) ?? '');
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Hedef Düzenle'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: uniController,
+              decoration: const InputDecoration(labelText: 'Üniversite'),
+            ),
+            TextField(
+              controller: deptController,
+              decoration: const InputDecoration(labelText: 'Bölüm'),
+            ),
+            TextField(
+              controller: netController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Hedef Net'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('İptal')),
+          FilledButton(
+            onPressed: () async {
+              await ref.read(examProfileProvider.notifier).updateTarget(
+                    university: uniController.text.trim().isEmpty
+                        ? null
+                        : uniController.text.trim(),
+                    department: deptController.text.trim().isEmpty
+                        ? null
+                        : deptController.text.trim(),
+                    targetNet: double.tryParse(
+                        netController.text.replaceAll(',', '.')),
+                  );
+              if (ctx.mounted) Navigator.pop(ctx);
+            },
+            child: const Text('Kaydet'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmReset(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Profili Sıfırla'),
+        content: const Text(
+            'Sınav profilin silinecek ve onboarding ekranı tekrar gösterilecek. Çalışma verilerin (konular, sorular, denemeler) silinmez.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('İptal')),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+            ),
+            onPressed: () async {
+              await ref.read(examProfileProvider.notifier).reset();
+              await NotificationService.instance.cancelAll();
+              if (ctx.mounted) {
+                Navigator.pop(ctx);
+                context.go('/onboarding');
+              }
+            },
+            child: const Text('Sıfırla'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle({required this.title});
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12, top: 8),
+      child: Text(
+        title,
+        style: textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.bold,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+      ),
+    );
+  }
+}
+
+class _DurationTile extends StatelessWidget {
+  const _DurationTile({
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.color,
+    required this.onChanged,
+    required this.min,
+    required this.max,
+  });
+
+  final String title;
+  final int value;
+  final IconData icon;
+  final Color color;
+  final ValueChanged<double> onChanged;
+  final double min;
+  final double max;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return GlassContainer(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      color: colorScheme.surface,
+      borderRadius: BorderRadius.circular(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 20, color: color),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: textTheme.bodyMedium
+                      ?.copyWith(fontWeight: FontWeight.w600),
+                ),
+              ),
+              Text(
+                '$value dk',
+                style: textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          SliderTheme(
+            data: SliderThemeData(
+              activeTrackColor: color,
+              inactiveTrackColor: color.withAlpha(50),
+              thumbColor: color,
+              overlayColor: color.withAlpha(30),
+              trackHeight: 4,
+            ),
+            child: Slider(
+              value: value.toDouble(),
+              min: min,
+              max: max,
+              divisions: (max - min).toInt(),
+              onChanged: onChanged,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
