@@ -3,7 +3,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/exam/providers/exam_profile_provider.dart';
 import '../../features/onboarding/views/onboarding_view.dart';
-import '../../features/tasks/views/tasks_view.dart';
+import '../../features/questions/views/question_log_view.dart';
+import '../../features/subjects/views/subjects_view.dart';
+import '../../features/subjects/views/topic_list_view.dart';
 import '../../features/calendar/views/calendar_view.dart';
 import '../../features/timer/views/timer_view.dart';
 import '../../features/stats/views/stats_view.dart';
@@ -15,17 +17,20 @@ class AppRoutes {
   AppRoutes._();
 
   static const String onboarding = '/onboarding';
-  static const String tasks = '/tasks';
+  static const String subjects = '/subjects';
   static const String calendar = '/calendar';
   static const String timer = '/timer';
+  static const String questions = '/questions';
   static const String stats = '/stats';
   static const String settings = '/settings';
+  // Eski path - geriye dönük uyumluluk için redirect ile subjects'e yönlendiriyoruz
+  static const String tasks = '/tasks';
 }
 
 /// Router provider — uygulamanın tek router kaynağı
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
-    initialLocation: AppRoutes.tasks,
+    initialLocation: AppRoutes.subjects,
     debugLogDiagnostics: false,
     redirect: (context, state) {
       final profile = ref.read(examProfileProvider);
@@ -36,7 +41,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       }
       // Tamamlandıysa onboarding'e gitmesine izin verme
       if (profile != null && isOnboarding) {
-        return AppRoutes.tasks;
+        return AppRoutes.subjects;
+      }
+      // /tasks → /subjects
+      if (state.matchedLocation == AppRoutes.tasks) {
+        return AppRoutes.subjects;
       }
       return null;
     },
@@ -49,20 +58,53 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           child: OnboardingView(),
         ),
       ),
+      // Konu listesi (subject detail) - shell dışında stack içinde açılır
+      GoRoute(
+        path: '/subject/:id',
+        name: 'subjectDetail',
+        builder: (context, state) {
+          final id = state.pathParameters['id'] ?? '';
+          return TopicListView(subjectId: id);
+        },
+      ),
       // Shell route - Alt navigasyon barı için
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return MainScaffold(navigationShell: navigationShell);
         },
         branches: [
-          // Görevler
+          // Dersler
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: AppRoutes.tasks,
-                name: 'tasks',
+                path: AppRoutes.subjects,
+                name: 'subjects',
                 pageBuilder: (context, state) => const NoTransitionPage(
-                  child: TasksView(),
+                  child: SubjectsView(),
+                ),
+              ),
+            ],
+          ),
+          // Çalış (Pomodoro Timer)
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.timer,
+                name: 'timer',
+                pageBuilder: (context, state) => const NoTransitionPage(
+                  child: TimerView(),
+                ),
+              ),
+            ],
+          ),
+          // Soru Çözüm
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.questions,
+                name: 'questions',
+                pageBuilder: (context, state) => const NoTransitionPage(
+                  child: QuestionLogView(),
                 ),
               ),
             ],
@@ -79,19 +121,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          // Zamanlayıcı
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: AppRoutes.timer,
-                name: 'timer',
-                pageBuilder: (context, state) => const NoTransitionPage(
-                  child: TimerView(),
-                ),
-              ),
-            ],
-          ),
-          // İstatistikler
+          // İstatistik
           StatefulShellBranch(
             routes: [
               GoRoute(

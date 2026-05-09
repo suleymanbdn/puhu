@@ -12,6 +12,7 @@ import 'core/services/settings_provider.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_provider.dart';
 import 'features/exam/models/exam_profile.dart';
+import 'features/questions/models/question_log.dart';
 import 'features/subjects/models/topic.dart';
 import 'features/update/providers/store_update_provider.dart';
 import 'features/update/views/update_prompt_page.dart';
@@ -71,6 +72,7 @@ Future<void> _initHive() async {
     if (!Hive.isAdapterRegistered(8)) Hive.registerAdapter(TopicAdapter());
     if (!Hive.isAdapterRegistered(9)) Hive.registerAdapter(ExamTypeAdapter());
     if (!Hive.isAdapterRegistered(10)) Hive.registerAdapter(ExamProfileAdapter());
+    if (!Hive.isAdapterRegistered(11)) Hive.registerAdapter(QuestionLogAdapter());
   } on ArgumentError catch (e) {
     // Adapter zaten kayıtlıysa güvenle devam et
     debugPrint('Adapter already registered: $e');
@@ -83,6 +85,7 @@ Future<void> _initHive() async {
     Hive.openBox<TimeBudget>(AppConstants.timeBudgetsBox),
     Hive.openBox<Topic>(AppConstants.topicsBox),
     Hive.openBox<ExamProfile>(AppConstants.examProfileBox),
+    Hive.openBox<QuestionLog>(AppConstants.questionLogsBox),
   ]);
 }
 

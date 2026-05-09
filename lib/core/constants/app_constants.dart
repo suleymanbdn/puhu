@@ -19,6 +19,7 @@ class AppConstants {
   static const String timeBudgetsBox = 'time_budgets_box';
   static const String topicsBox = 'topics_box';
   static const String examProfileBox = 'exam_profile_box';
+  static const String questionLogsBox = 'question_logs_box';
 
   // SharedPreferences Keys
   static const String themeKey = 'theme_mode';

@@ -27,6 +27,8 @@ class FocusTimerState {
   final int remainingSeconds;
   final String? linkedTaskId;
   final TaskCategory? category;
+  final String? subjectId;
+  final String? topicId;
   final DateTime? startTime;
 
   const FocusTimerState({
@@ -36,6 +38,8 @@ class FocusTimerState {
     this.remainingSeconds = 25 * 60,
     this.linkedTaskId,
     this.category,
+    this.subjectId,
+    this.topicId,
     this.startTime,
   });
 
@@ -46,7 +50,11 @@ class FocusTimerState {
     int? remainingSeconds,
     String? linkedTaskId,
     TaskCategory? category,
+    String? subjectId,
+    String? topicId,
     DateTime? startTime,
+    bool clearSubject = false,
+    bool clearTopic = false,
   }) {
     return FocusTimerState(
       status: status ?? this.status,
@@ -55,6 +63,8 @@ class FocusTimerState {
       remainingSeconds: remainingSeconds ?? this.remainingSeconds,
       linkedTaskId: linkedTaskId ?? this.linkedTaskId,
       category: category ?? this.category,
+      subjectId: clearSubject ? null : (subjectId ?? this.subjectId),
+      topicId: clearTopic ? null : (topicId ?? this.topicId),
       startTime: startTime ?? this.startTime,
     );
   }
@@ -205,6 +215,20 @@ class FocusTimerNotifier extends StateNotifier<FocusTimerState> {
     state = state.copyWith(category: category);
   }
 
+  /// YKS dersi seç
+  void setSubject(String? subjectId) {
+    state = state.copyWith(
+      subjectId: subjectId,
+      // Ders değişince konu sıfırlanır
+      clearTopic: true,
+    );
+  }
+
+  /// YKS konusu seç
+  void setTopic(String? topicId) {
+    state = state.copyWith(topicId: topicId);
+  }
+
   /// Oturumu tamamla ve kaydet
   Future<FocusSession> completeSession(FocusMood mood, {String? note}) async {
     _timer?.cancel();
@@ -218,7 +242,8 @@ class FocusTimerNotifier extends StateNotifier<FocusTimerState> {
       startTime: state.startTime ?? DateTime.now(),
       endTime: DateTime.now(),
       taskId: state.linkedTaskId,
-      categoryName: state.category?.title,
+      // YKS pivot: categoryName önce subjectId, yoksa eski category.title
+      categoryName: state.subjectId ?? state.category?.title,
       note: note,
     );
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../subjects/providers/topic_provider.dart';
 import '../models/focus_session.dart';
 import '../providers/focus_provider.dart';
 
@@ -70,6 +71,14 @@ class _FocusCompletionDialogState extends ConsumerState<FocusCompletionDialog>
 
     setState(() => _isLoading = true);
 
+    // completeSession() içinde reset() çağrılıp state temizleneceğinden
+    // YKS subject/topic bilgilerini ÖNCE okuyoruz
+    final timerState = ref.read(focusTimerProvider);
+    final subjectId = timerState.subjectId;
+    final topicId = timerState.topicId;
+    // Subject seçilmediyse fallback olarak eski category sistemini kullan
+    final budgetKey = subjectId ?? timerState.category?.title;
+
     try {
       final session = await ref.read(focusTimerProvider.notifier).completeSession(
             _selectedMood!,
@@ -78,13 +87,20 @@ class _FocusCompletionDialogState extends ConsumerState<FocusCompletionDialog>
                 : _noteController.text.trim(),
           );
 
-      // Time budget'a ekle
-      if (widget.focusType == FocusType.work) {
-        final timerState = ref.read(focusTimerProvider);
-        final categoryName = timerState.category?.title ?? 'İş';
-        ref
-            .read(timeBudgetProvider.notifier)
-            .addTimeToCategory(categoryName, widget.elapsedMinutes);
+      // Sadece çalışma oturumlarında bütçe ve konu güncellenir
+      if (widget.focusType == FocusType.work && widget.elapsedMinutes > 0) {
+        // 1) Time budget'a süre ekle
+        if (budgetKey != null) {
+          await ref
+              .read(timeBudgetProvider.notifier)
+              .addTimeToCategory(budgetKey, widget.elapsedMinutes);
+        }
+        // 2) YKS Topic'e süre ekle (lastStudiedAt + status güncellenir)
+        if (topicId != null) {
+          await ref
+              .read(topicProvider.notifier)
+              .addStudyTime(topicId, widget.elapsedMinutes);
+        }
       }
 
       // Focus history'yi güncelle
