@@ -101,7 +101,7 @@ class _OnboardingViewState extends ConsumerState<OnboardingView> {
       await NotificationService.instance.scheduleDailyReminder();
 
       if (mounted) {
-        context.go('/tasks');
+        context.go('/home');
       }
     } catch (e) {
       if (mounted) {

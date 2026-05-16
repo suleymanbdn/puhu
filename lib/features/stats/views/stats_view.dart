@@ -2,6 +2,8 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/services/feature_gate.dart';
+import '../../../core/services/purchase_service.dart';
 import '../../../core/theme/theme_provider.dart';
 import '../../exam/models/exam_profile.dart';
 import '../../exam/providers/exam_profile_provider.dart';
@@ -68,7 +70,7 @@ class StatsView extends ConsumerWidget {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 124),
         children: [
           // Sınava kalan + bugün
           Container(
@@ -189,8 +191,11 @@ class StatsView extends ConsumerWidget {
           _SubjectDistributionCard(subjects: subjects, topics: topics),
           const SizedBox(height: 24),
 
-          // Konu zayıflık analizi
-          _WeakTopicsCard(topics: topics),
+          // Konu zayıflık analizi — premium özellik
+          if (ref.watch(isPremiumProvider))
+            _WeakTopicsCard(topics: topics)
+          else
+            const _LockedWeakTopics(),
         ],
       ),
     );
@@ -439,6 +444,47 @@ class _SubjectDistributionCard extends StatelessWidget {
     final h = m ~/ 60;
     final r = m % 60;
     return r == 0 ? '${h}sa' : '${h}sa ${r}dk';
+  }
+}
+
+/// Ücretsiz kullanıcıya zayıf konu analizinin kilitli olduğunu gösterir.
+class _LockedWeakTopics extends StatelessWidget {
+  const _LockedWeakTopics();
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return InkWell(
+      onTap: () =>
+          showPaywall(context, feature: PremiumFeature.weakTopicAnalysis),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: colorScheme.primary.withAlpha(15),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: colorScheme.primary.withAlpha(50)),
+        ),
+        child: Column(
+          children: [
+            Icon(Icons.lock_outline, size: 32, color: colorScheme.primary),
+            const SizedBox(height: 8),
+            Text('Zayıf Konu Analizi',
+                style: textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 2),
+            Text(
+              'Hangi konularda zayıf olduğunu gör, çalışmanı odakla — Baykuş+',
+              style: textTheme.bodySmall
+                  ?.copyWith(color: colorScheme.onSurfaceVariant),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

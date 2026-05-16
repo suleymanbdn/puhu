@@ -69,7 +69,7 @@ class SubjectsView extends ConsumerWidget {
         ],
       ),
       body: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 124),
         itemCount: subjects.length,
         itemBuilder: (context, i) {
           final subject = subjects[i];

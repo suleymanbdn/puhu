@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/services/feature_gate.dart';
+import '../../../core/services/purchase_service.dart';
 import '../../exam/models/exam_profile.dart';
 import '../../exam/providers/exam_profile_provider.dart';
 import '../../subjects/models/subject.dart';
@@ -35,8 +37,15 @@ class MockExamView extends ConsumerWidget {
     final profile = ref.watch(examProfileProvider);
     final exams = ref.watch(mockExamProvider);
     final notifier = ref.read(mockExamProvider.notifier);
+    final isPremium = ref.watch(isPremiumProvider);
 
     if (profile == null) return const SizedBox.shrink();
+
+    // En yeni denemeler başta. Ücretsiz kullanıcı yalnızca son 2'yi görür.
+    final ordered = exams.reversed.toList();
+    final visibleExams =
+        isPremium ? ordered : ordered.take(FreeLimits.mockExamsVisible).toList();
+    final lockedCount = ordered.length - visibleExams.length;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -44,7 +53,7 @@ class MockExamView extends ConsumerWidget {
         title: const Text('Denemeler'),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 124),
         children: [
           // Özet
           Row(
@@ -81,9 +90,14 @@ class MockExamView extends ConsumerWidget {
           ),
           const SizedBox(height: 20),
 
-          // Grafik
-          if (exams.length >= 2) _NetChart(exams: exams, profile: profile),
-          if (exams.length >= 2) const SizedBox(height: 20),
+          // Grafik — net trendi premium özelliktir.
+          if (exams.length >= 2) ...[
+            if (isPremium)
+              _NetChart(exams: exams, profile: profile)
+            else
+              const _LockedChartTeaser(),
+            const SizedBox(height: 20),
+          ],
 
           Text('Geçmiş Denemeler',
               style: textTheme.titleSmall
@@ -105,8 +119,10 @@ class MockExamView extends ConsumerWidget {
                 ],
               ),
             )
-          else
-            ...exams.reversed.map((e) => _ExamTile(exam: e)),
+          else ...[
+            ...visibleExams.map((e) => _ExamTile(exam: e)),
+            if (lockedCount > 0) _LockedExamsCard(count: lockedCount),
+          ],
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -159,6 +175,95 @@ class _SummaryCard extends StatelessWidget {
                 color: color,
               )),
         ],
+      ),
+    );
+  }
+}
+
+/// Ücretsiz kullanıcıya net trend grafiğinin kilitli olduğunu gösterir.
+class _LockedChartTeaser extends StatelessWidget {
+  const _LockedChartTeaser();
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return InkWell(
+      onTap: () =>
+          showPaywall(context, feature: PremiumFeature.advancedCharts),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        height: 150,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: colorScheme.primary.withAlpha(15),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: colorScheme.primary.withAlpha(50)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.show_chart, size: 32, color: colorScheme.primary),
+            const SizedBox(height: 8),
+            Text('Net Trend Grafiği',
+                style: textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 2),
+            Text(
+              'Deneme net gelişimini grafikle gör — Baykuş+',
+              style: textTheme.bodySmall
+                  ?.copyWith(color: colorScheme.onSurfaceVariant),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Ücretsiz kullanıcıya gizlenen eski denemeleri temsil eden kilit kartı.
+class _LockedExamsCard extends StatelessWidget {
+  const _LockedExamsCard({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: InkWell(
+        onTap: () =>
+            showPaywall(context, feature: PremiumFeature.fullMockHistory),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: colorScheme.outline),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.lock_outline,
+                  size: 20, color: colorScheme.onSurfaceVariant),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  '$count önceki deneme gizli. Tüm geçmişi görmek için '
+                  'Baykuş+ edin.',
+                  style: textTheme.bodySmall,
+                ),
+              ),
+              Icon(Icons.chevron_right,
+                  size: 18, color: colorScheme.onSurfaceVariant),
+            ],
+          ),
+        ),
       ),
     );
   }

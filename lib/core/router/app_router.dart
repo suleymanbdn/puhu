@@ -6,6 +6,7 @@ import '../../features/dashboard/views/dashboard_view.dart';
 import '../../features/exam/providers/exam_profile_provider.dart';
 import '../../features/mocks/views/mock_exam_view.dart';
 import '../../features/onboarding/views/onboarding_view.dart';
+import '../../features/paywall/views/paywall_view.dart';
 import '../../features/questions/views/question_log_view.dart';
 import '../../features/settings/views/settings_view.dart';
 import '../../features/stats/views/stats_view.dart';
@@ -27,6 +28,7 @@ class AppRoutes {
   static const String stats = '/stats';
   static const String settings = '/settings';
   static const String mocks = '/mocks';
+  static const String paywall = '/paywall';
   // Eski path - geriye dönük uyumluluk
   static const String tasks = '/tasks';
 }
@@ -73,6 +75,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.settings,
         name: 'settings',
         builder: (context, state) => const SettingsView(),
+      ),
+      GoRoute(
+        path: AppRoutes.paywall,
+        name: 'paywall',
+        builder: (context, state) => const PaywallView(),
       ),
       GoRoute(
         path: AppRoutes.calendar,

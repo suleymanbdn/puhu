@@ -6,21 +6,86 @@ import '../models/task_model.dart';
 import '../models/task_enums.dart';
 
 /// Task CRUD işlemlerini yöneten repository sınıfı
-/// 
+///
 /// Bu sınıf, görevlerin Hive veritabanında saklanması,
 /// güncellenmesi, silinmesi ve sorgulanması işlemlerini gerçekleştirir.
-class TaskRepository {
-  TaskRepository._();
+///
+/// Provider injection ile kullanım:
+/// ```dart
+/// final taskRepositoryProvider = Provider<TaskRepository>((ref) {
+///   return HiveTaskRepository();
+/// });
+/// ```
+abstract class TaskRepository {
+  /// Yeni görev ekler
+  Future<Task> addTask({
+    required String title,
+    String description = '',
+    TaskCategory category = TaskCategory.personal,
+    TaskPriority priority = TaskPriority.medium,
+    required DateTime date,
+    List<String> subtasks = const [],
+  });
 
-  static TaskRepository? _instance;
+  /// Tüm görevleri getirir
+  List<Task> getAllTasks();
 
-  /// Singleton instance
-  static TaskRepository get instance {
-    _instance ??= TaskRepository._();
-    return _instance!;
-  }
+  /// ID'ye göre görev getirir
+  Task? getTaskById(String id);
 
-  /// UUID generator
+  /// Belirli bir tarihe ait görevleri getirir
+  List<Task> getTasksByDate(DateTime date);
+
+  /// Bugünün görevlerini getirir
+  List<Task> getTodayTasks();
+
+  /// Tamamlanmamış görevleri getirir
+  List<Task> getIncompleteTasks();
+
+  /// Tamamlanmış görevleri getirir
+  List<Task> getCompletedTasks();
+
+  /// Kategoriye göre görevleri getirir
+  List<Task> getTasksByCategory(TaskCategory category);
+
+  /// Önceliğe göre görevleri getirir
+  List<Task> getTasksByPriority(TaskPriority priority);
+
+  /// Tarih aralığına göre görevleri getirir
+  List<Task> getTasksByDateRange(DateTime start, DateTime end);
+
+  /// Gecikmiş görevleri getirir
+  List<Task> getOverdueTasks();
+
+  /// Görevi günceller
+  Future<Task> updateTask(Task task);
+
+  /// Görevin tamamlanma durumunu değiştirir
+  Future<Task> toggleTaskCompletion(String id);
+
+  /// Göreve süre ekler
+  Future<Task> addDuration(String id, int minutes);
+
+  /// Görevi siler
+  Future<void> deleteTask(String id);
+
+  /// Tüm görevleri siler
+  Future<void> deleteAllTasks();
+
+  /// Tamamlanmış görevleri siler
+  Future<void> deleteCompletedTasks();
+
+  /// Görev istatistiklerini hesaplar
+  TaskStatistics getStatistics();
+
+  /// Hive box stream'i - değişiklikleri dinlemek için
+  Stream<BoxEvent> watchTasks();
+}
+
+/// Hive tabanlı TaskRepository implementasyonu
+class HiveTaskRepository implements TaskRepository {
+  HiveTaskRepository();
+
   final _uuid = const Uuid();
 
   /// Tasks box'a erişim
@@ -30,13 +95,14 @@ class TaskRepository {
   // CREATE
   // ============================================================
 
-  /// Yeni görev ekler
+  @override
   Future<Task> addTask({
     required String title,
     String description = '',
     TaskCategory category = TaskCategory.personal,
     TaskPriority priority = TaskPriority.medium,
     required DateTime date,
+    List<String> subtasks = const [],
   }) async {
     final task = Task(
       id: _uuid.v4(),
@@ -45,6 +111,7 @@ class TaskRepository {
       category: category,
       priority: priority,
       date: date,
+      subtasks: subtasks,
     );
 
     await _tasksBox.put(task.id, task);
@@ -55,17 +122,17 @@ class TaskRepository {
   // READ
   // ============================================================
 
-  /// Tüm görevleri getirir
+  @override
   List<Task> getAllTasks() {
     return _tasksBox.values.toList();
   }
 
-  /// ID'ye göre görev getirir
+  @override
   Task? getTaskById(String id) {
     return _tasksBox.get(id);
   }
 
-  /// Belirli bir tarihe ait görevleri getirir
+  @override
   List<Task> getTasksByDate(DateTime date) {
     return _tasksBox.values.where((task) {
       return task.date.year == date.year &&
@@ -74,43 +141,44 @@ class TaskRepository {
     }).toList();
   }
 
-  /// Bugünün görevlerini getirir
+  @override
   List<Task> getTodayTasks() {
     return getTasksByDate(DateTime.now());
   }
 
-  /// Tamamlanmamış görevleri getirir
+  @override
   List<Task> getIncompleteTasks() {
     return _tasksBox.values.where((task) => !task.isCompleted).toList();
   }
 
-  /// Tamamlanmış görevleri getirir
+  @override
   List<Task> getCompletedTasks() {
     return _tasksBox.values.where((task) => task.isCompleted).toList();
   }
 
-  /// Kategoriye göre görevleri getirir
+  @override
   List<Task> getTasksByCategory(TaskCategory category) {
     return _tasksBox.values.where((task) => task.category == category).toList();
   }
 
-  /// Önceliğe göre görevleri getirir
+  @override
   List<Task> getTasksByPriority(TaskPriority priority) {
     return _tasksBox.values.where((task) => task.priority == priority).toList();
   }
 
-  /// Tarih aralığına göre görevleri getirir
+  @override
   List<Task> getTasksByDateRange(DateTime start, DateTime end) {
     final startDate = DateTime(start.year, start.month, start.day);
     final endDate = DateTime(end.year, end.month, end.day, 23, 59, 59);
 
     return _tasksBox.values.where((task) {
-      return task.date.isAfter(startDate.subtract(const Duration(seconds: 1))) &&
+      return task.date
+              .isAfter(startDate.subtract(const Duration(seconds: 1))) &&
           task.date.isBefore(endDate.add(const Duration(seconds: 1)));
     }).toList();
   }
 
-  /// Gecikmiş görevleri getirir
+  @override
   List<Task> getOverdueTasks() {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -124,14 +192,14 @@ class TaskRepository {
   // UPDATE
   // ============================================================
 
-  /// Görevi günceller
+  @override
   Future<Task> updateTask(Task task) async {
     final updatedTask = task.copyWith(updatedAt: DateTime.now());
     await _tasksBox.put(task.id, updatedTask);
     return updatedTask;
   }
 
-  /// Görevin tamamlanma durumunu değiştirir
+  @override
   Future<Task> toggleTaskCompletion(String id) async {
     final task = _tasksBox.get(id);
     if (task == null) {
@@ -147,7 +215,7 @@ class TaskRepository {
     return updatedTask;
   }
 
-  /// Göreve süre ekler
+  @override
   Future<Task> addDuration(String id, int minutes) async {
     final task = _tasksBox.get(id);
     if (task == null) {
@@ -167,17 +235,17 @@ class TaskRepository {
   // DELETE
   // ============================================================
 
-  /// Görevi siler
+  @override
   Future<void> deleteTask(String id) async {
     await _tasksBox.delete(id);
   }
 
-  /// Tüm görevleri siler
+  @override
   Future<void> deleteAllTasks() async {
     await _tasksBox.clear();
   }
 
-  /// Tamamlanmış görevleri siler
+  @override
   Future<void> deleteCompletedTasks() async {
     final completedTasks = getCompletedTasks();
     for (final task in completedTasks) {
@@ -189,7 +257,7 @@ class TaskRepository {
   // STATISTICS
   // ============================================================
 
-  /// Görev istatistiklerini hesaplar
+  @override
   TaskStatistics getStatistics() {
     final allTasks = getAllTasks();
     final completedTasks = allTasks.where((t) => t.isCompleted).toList();
@@ -209,7 +277,7 @@ class TaskRepository {
     );
   }
 
-  /// Hive box stream'i - değişiklikleri dinlemek için
+  @override
   Stream<BoxEvent> watchTasks() {
     return _tasksBox.watch();
   }
@@ -237,5 +305,3 @@ class TaskStatistics {
     return (completedTasks / totalTasks) * 100;
   }
 }
-
-

@@ -65,7 +65,7 @@ class TopicListView extends ConsumerWidget {
         ),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 124),
         children: [
           // Durum özeti
           Row(

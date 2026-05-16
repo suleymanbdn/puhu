@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/services/feature_gate.dart';
 import '../../exam/models/exam_profile.dart';
 import '../../exam/providers/exam_profile_provider.dart';
 import '../../subjects/models/subject.dart';
@@ -36,6 +37,8 @@ class QuestionLogView extends ConsumerWidget {
     final profile = ref.watch(examProfileProvider);
     final logs = ref.watch(questionLogProvider);
     final notifier = ref.read(questionLogProvider.notifier);
+    final canAdd = ref.watch(canAddQuestionLogProvider);
+    final remaining = ref.watch(remainingQuestionLogsProvider);
 
     if (profile == null) return const SizedBox.shrink();
 
@@ -52,7 +55,7 @@ class QuestionLogView extends ConsumerWidget {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 124),
         children: [
           // Bugün özeti
           Container(
@@ -99,6 +102,10 @@ class QuestionLogView extends ConsumerWidget {
               ],
             ),
           ),
+          if (remaining < 9999) ...[
+            const SizedBox(height: 12),
+            _RemainingBanner(remaining: remaining),
+          ],
           const SizedBox(height: 24),
           Text(
             'Geçmiş',
@@ -136,12 +143,64 @@ class QuestionLogView extends ConsumerWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _AddLogSheet.show(
-          context,
-          examType: _filter(profile.examType),
+        onPressed: () {
+          if (canAdd) {
+            _AddLogSheet.show(context, examType: _filter(profile.examType));
+          } else {
+            showPaywall(context,
+                feature: PremiumFeature.unlimitedQuestionLog);
+          }
+        },
+        icon: Icon(canAdd ? Icons.add : Icons.lock_outline),
+        label: Text(canAdd ? 'Soru Ekle' : 'Baykuş+ ile Sınırsız'),
+      ),
+    );
+  }
+}
+
+/// Ücretsiz kullanıcıya kalan günlük soru kaydı hakkını gösteren bant.
+class _RemainingBanner extends StatelessWidget {
+  const _RemainingBanner({required this.remaining});
+
+  final int remaining;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final isEmpty = remaining <= 0;
+    final color = isEmpty ? colorScheme.error : colorScheme.primary;
+
+    return InkWell(
+      onTap: isEmpty
+          ? () => showPaywall(context,
+              feature: PremiumFeature.unlimitedQuestionLog)
+          : null,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: color.withAlpha(20),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withAlpha(60)),
         ),
-        icon: const Icon(Icons.add),
-        label: const Text('Soru Ekle'),
+        child: Row(
+          children: [
+            Icon(isEmpty ? Icons.lock_outline : Icons.bolt_outlined,
+                size: 18, color: color),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                isEmpty
+                    ? 'Günlük ücretsiz limit doldu. Baykuş+ ile sınırsız kayıt.'
+                    : 'Bugün $remaining ücretsiz kayıt hakkın kaldı.',
+                style: textTheme.bodySmall?.copyWith(color: color),
+              ),
+            ),
+            if (isEmpty)
+              Icon(Icons.chevron_right, size: 18, color: color),
+          ],
+        ),
       ),
     );
   }

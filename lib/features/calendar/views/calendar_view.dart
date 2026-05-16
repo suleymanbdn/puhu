@@ -9,6 +9,7 @@ import '../../tasks/providers/task_provider.dart';
 import '../../tasks/widgets/task_card.dart';
 import '../../tasks/widgets/add_task_bottom_sheet.dart';
 import '../../../shared/widgets/empty_state_widget.dart';
+import '../../../shared/widgets/glass_container.dart';
 
 /// Takvim görünümü - Haftalık ve Aylık
 class CalendarView extends ConsumerStatefulWidget {
@@ -32,7 +33,7 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
     final taskDates = ref.watch(taskDatesProvider);
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: Colors.transparent, // Arka plandaki gradientin görünmesi için
       appBar: AppBar(
         title: const Text('Takvim'),
         actions: [
@@ -104,13 +105,16 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => AddTaskBottomSheet.show(
-          context,
-          initialDate: selectedDate,
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 180), // Glass navigation bar'ın üstünde durması için (tabletler dahil)
+        child: FloatingActionButton(
+          onPressed: () => AddTaskBottomSheet.show(
+            context,
+            initialDate: selectedDate,
+          ),
+          tooltip: 'Görev Ekle',
+          child: const Icon(Icons.add),
         ),
-        tooltip: 'Görev Ekle',
-        child: const Icon(Icons.add),
       ),
     );
   }
@@ -121,16 +125,10 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
     DateTime selectedDate,
     Map<DateTime, List<Task>> taskDates,
   ) {
-    return Container(
+    return GlassContainer(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: colorScheme.outlineVariant,
-          width: 1,
-        ),
-      ),
+      color: colorScheme.surface,
+      borderRadius: BorderRadius.circular(20),
       child: TableCalendar<Task>(
         firstDay: DateTime.utc(2020, 1, 1),
         lastDay: DateTime.utc(2030, 12, 31),

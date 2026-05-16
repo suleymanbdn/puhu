@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/services/feature_gate.dart';
+import '../../../core/services/purchase_service.dart';
 import '../../../core/theme/theme_provider.dart';
 import '../../exam/providers/exam_profile_provider.dart';
 import '../../mocks/providers/mock_exam_provider.dart';
@@ -25,6 +27,7 @@ class DashboardView extends ConsumerWidget {
     ref.watch(questionLogProvider);
     final mocks = ref.watch(mockExamProvider);
     final mockNotifier = ref.read(mockExamProvider.notifier);
+    final isPremium = ref.watch(isPremiumProvider);
 
     if (profile == null) return const SizedBox.shrink();
 
@@ -58,7 +61,7 @@ class DashboardView extends ConsumerWidget {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 124),
         children: [
           // Sınav countdown
           Container(
@@ -234,7 +237,72 @@ class DashboardView extends ConsumerWidget {
             todayMin: todayMin,
             targetMin: dailyTargetMin,
           ),
+
+          // Baykuş+ tanıtım kartı (premium olmayanlar için)
+          if (!isPremium) ...[
+            const SizedBox(height: 16),
+            const _PremiumPromoCard(),
+          ],
         ],
+      ),
+    );
+  }
+}
+
+/// Anasayfada gösterilen Baykuş+ tanıtım kartı.
+class _PremiumPromoCard extends StatelessWidget {
+  const _PremiumPromoCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+
+    return InkWell(
+      onTap: () => showPaywall(context),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              theme.colorScheme.primary,
+              theme.colorScheme.secondary,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.workspace_premium_rounded,
+                color: Colors.white, size: 36),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Baykuş+ ile potansiyelini aç',
+                    style: textTheme.titleMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Sınırsız soru günlüğü, tüm deneme geçmişi ve zayıf '
+                    'konu analizi',
+                    style: textTheme.bodySmall
+                        ?.copyWith(color: Colors.white.withAlpha(220)),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: Colors.white),
+          ],
+        ),
       ),
     );
   }

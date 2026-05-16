@@ -33,7 +33,7 @@ val hasReleaseSigning =
         releaseStoreFile.isFile
 
 android {
-    namespace = "com.baykus.app"
+    namespace = "com.zamanyonetimi.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -48,7 +48,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.baykus.app"
+        applicationId = "com.zamanyonetimi.app"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

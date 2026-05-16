@@ -1,13 +1,15 @@
-name: zaman_yonetimi
+name: baykus
 description: "Baykuş — YKS çalışma asistanın. Konu takibi, soru çözüm, deneme analizi, akıllı tekrar."
 publish_to: 'none'
-version: 1.0.9+21
+version: 1.1.0+102
 
 environment:
   sdk: ^3.5.0
 
 dependencies:
   flutter:
+    sdk: flutter
+  flutter_localizations:
     sdk: flutter
 
   # State Management - Riverpod
@@ -22,7 +24,7 @@ dependencies:
   go_router: ^14.2.7
   
   # Utilities
-  intl: ^0.19.0
+  intl: ^0.20.2
   uuid: ^4.4.2
   
   # UI
@@ -35,6 +37,9 @@ dependencies:
   flutter_local_notifications: ^21.0.0
   timezone: ^0.11.0
   fl_chart: ^1.2.0
+
+  # In-App Purchases - RevenueCat
+  purchases_flutter: ^8.11.0
 
 dev_dependencies:
   flutter_test:
@@ -51,7 +56,9 @@ dev_dependencies:
 
 flutter_launcher_icons:
   android: "launcher_icon"
-  ios: false
+  ios: true
+  remove_alpha_ios: true
+  background_color_ios: "#1E1B4B"
   image_path: "assets/icon/app_icon.png"
   min_sdk_android: 21
   adaptive_icon_background: "#1E1B4B"

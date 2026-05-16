@@ -43,3 +43,11 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# İmza ve gizli anahtarlar (asla repoya eklenmemeli)
+*.jks
+*.keystore
+**/upload-keystore.jks
+/android/key.properties
+/android/keystore.properties
+*.hprof

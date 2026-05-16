@@ -40,12 +40,16 @@ class Task extends HiveObject {
   @HiveField(7)
   int durationSpent;
 
-  /// Oluşturulma tarihi
+  /// Alt görevler (Checklist)
   @HiveField(8)
+  List<String> subtasks;
+
+  /// Oluşturulma tarihi
+  @HiveField(9)
   final DateTime createdAt;
 
   /// Güncellenme tarihi
-  @HiveField(9)
+  @HiveField(10)
   DateTime? updatedAt;
 
   Task({
@@ -57,6 +61,7 @@ class Task extends HiveObject {
     required this.date,
     this.isCompleted = false,
     this.durationSpent = 0,
+    this.subtasks = const [],
     DateTime? createdAt,
     this.updatedAt,
   }) : createdAt = createdAt ?? DateTime.now();
@@ -71,6 +76,7 @@ class Task extends HiveObject {
     DateTime? date,
     bool? isCompleted,
     int? durationSpent,
+    List<String>? subtasks,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -83,6 +89,7 @@ class Task extends HiveObject {
       date: date ?? this.date,
       isCompleted: isCompleted ?? this.isCompleted,
       durationSpent: durationSpent ?? this.durationSpent,
+      subtasks: subtasks ?? this.subtasks,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

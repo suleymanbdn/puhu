@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/widgets/glass_container.dart';
 import '../../timer/models/time_budget.dart';
 import '../../timer/providers/focus_provider.dart';
 
@@ -25,82 +26,80 @@ class TimeBudgetCard extends ConsumerWidget {
     final totalSpent = budgets.fold<double>(0, (sum, b) => sum + b.spentHours);
     final overallProgress = totalTarget > 0 ? (totalSpent / totalTarget) : 0.0;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Başlık
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: colorScheme.primary.withAlpha(20),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    Icons.account_balance_wallet_outlined,
-                    color: colorScheme.primary,
-                    size: 22,
-                  ),
+    return GlassContainer(
+      padding: const EdgeInsets.all(20),
+      color: colorScheme.surface,
+      borderRadius: BorderRadius.circular(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Başlık
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withAlpha(20),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Haftalık Zaman Bütçesi',
-                        style: textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        '${totalSpent.toStringAsFixed(1)} / ${totalTarget.toStringAsFixed(0)} saat',
-                        style: textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
+                child: Icon(
+                  Icons.account_balance_wallet_outlined,
+                  color: colorScheme.primary,
+                  size: 20,
                 ),
-                // Genel ilerleme
-                SizedBox(
-                  width: 48,
-                  height: 48,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      CircularProgressIndicator(
-                        value: overallProgress.clamp(0.0, 1.0),
-                        backgroundColor: colorScheme.outlineVariant,
-                        strokeWidth: 5,
-                        valueColor: AlwaysStoppedAnimation(
-                          overallProgress >= 1.0
-                              ? const Color(0xFF10B981)
-                              : colorScheme.primary,
-                        ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Zaman Bütçesi',
+                      style: textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
                       ),
-                      Text(
-                        '${(overallProgress * 100).round()}%',
-                        style: textTheme.labelSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                    Text(
+                      '${totalSpent.toStringAsFixed(1)} / ${totalTarget.toStringAsFixed(0)} saat',
+                      style: textTheme.labelSmall,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            const SizedBox(height: 20),
+              ),
+              // Genel ilerleme
+              SizedBox(
+                width: 44,
+                height: 44,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    CircularProgressIndicator(
+                      value: overallProgress.clamp(0.0, 1.0),
+                      backgroundColor: colorScheme.outline,
+                      strokeWidth: 4,
+                      valueColor: AlwaysStoppedAnimation(
+                        overallProgress >= 1.0
+                            ? const Color(0xFF10B981)
+                            : colorScheme.primary,
+                      ),
+                    ),
+                    Text(
+                      '${(overallProgress * 100).round()}%',
+                      style: textTheme.labelSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
 
-            // Kategori bütçeleri
-            ...budgets.map((budget) => _BudgetProgressItem(budget: budget)),
-          ],
-        ),
+          // Kategori bütçeleri
+          ...budgets.map((budget) => _BudgetProgressItem(budget: budget)),
+        ],
       ),
     );
   }
@@ -138,7 +137,7 @@ class _BudgetProgressItem extends StatelessWidget {
                 child: Icon(
                   budget.icon,
                   color: budget.color,
-                  size: 16,
+                  size: 14,
                 ),
               ),
               const SizedBox(width: 10),
@@ -146,7 +145,7 @@ class _BudgetProgressItem extends StatelessWidget {
               Expanded(
                 child: Text(
                   budget.categoryName,
-                  style: textTheme.bodyMedium?.copyWith(
+                  style: textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -156,22 +155,12 @@ class _BudgetProgressItem extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    '${budget.spentHours.toStringAsFixed(1)} / ${budget.targetHours.toStringAsFixed(0)} saat',
-                    style: textTheme.labelMedium?.copyWith(
+                    '${budget.spentHours.toStringAsFixed(1)} / ${budget.targetHours.toStringAsFixed(0)}s',
+                    style: textTheme.labelSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                       color: isOverBudget
                           ? colorScheme.error
                           : colorScheme.onSurface,
-                    ),
-                  ),
-                  Text(
-                    isCompleted
-                        ? 'Hedef tamamlandı! ✓'
-                        : 'Kalan: ${budget.remainingHours.toStringAsFixed(1)} saat',
-                    style: textTheme.labelSmall?.copyWith(
-                      color: isCompleted
-                          ? const Color(0xFF10B981)
-                          : colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -185,38 +174,27 @@ class _BudgetProgressItem extends StatelessWidget {
             children: [
               // Arka plan
               Container(
-                height: 8,
+                height: 6,
                 decoration: BoxDecoration(
                   color: colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(3),
                 ),
               ),
               // İlerleme
               AnimatedContainer(
                 duration: const Duration(milliseconds: 500),
                 curve: Curves.easeOutCubic,
-                height: 8,
+                height: 6,
                 width: MediaQuery.of(context).size.width *
                     0.65 *
                     budget.progress.clamp(0.0, 1.0),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: isOverBudget
-                        ? [
-                            colorScheme.error,
-                            colorScheme.error.withAlpha(180),
-                          ]
-                        : isCompleted
-                            ? [
-                                const Color(0xFF10B981),
-                                const Color(0xFF10B981).withAlpha(180),
-                              ]
-                            : [
-                                budget.color,
-                                budget.color.withAlpha(180),
-                              ],
-                  ),
-                  borderRadius: BorderRadius.circular(4),
+                  color: isOverBudget
+                      ? colorScheme.error
+                      : isCompleted
+                          ? const Color(0xFF10B981)
+                          : budget.color,
+                  borderRadius: BorderRadius.circular(3),
                 ),
               ),
             ],
@@ -241,23 +219,11 @@ class TimeBudgetCompact extends ConsumerWidget {
 
     if (budgets.isEmpty) return const SizedBox.shrink();
 
-    return Container(
+    return GlassContainer(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            colorScheme.primaryContainer.withAlpha(80),
-            colorScheme.secondaryContainer.withAlpha(60),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withAlpha(100),
-        ),
-      ),
+      color: colorScheme.surface,
+      borderRadius: BorderRadius.circular(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -266,13 +232,13 @@ class TimeBudgetCompact extends ConsumerWidget {
               Icon(
                 Icons.account_balance_wallet_outlined,
                 color: colorScheme.primary,
-                size: 18,
+                size: 16,
               ),
               const SizedBox(width: 8),
               Text(
                 'Zaman Bütçesi',
                 style: textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],
@@ -290,13 +256,12 @@ class TimeBudgetCompact extends ConsumerWidget {
                         alignment: Alignment.center,
                         children: [
                           SizedBox(
-                            width: 40,
-                            height: 40,
+                            width: 36,
+                            height: 36,
                             child: CircularProgressIndicator(
                               value: budget.progress.clamp(0.0, 1.0),
-                              backgroundColor:
-                                  colorScheme.outlineVariant.withAlpha(100),
-                              strokeWidth: 4,
+                              backgroundColor: colorScheme.outline,
+                              strokeWidth: 3,
                               valueColor: AlwaysStoppedAnimation(
                                 budget.isCompleted
                                     ? const Color(0xFF10B981)
@@ -306,12 +271,12 @@ class TimeBudgetCompact extends ConsumerWidget {
                           ),
                           Icon(
                             budget.icon,
-                            size: 16,
+                            size: 14,
                             color: budget.color,
                           ),
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       Text(
                         '${budget.spentHours.toStringAsFixed(0)}s',
                         style: textTheme.labelSmall?.copyWith(

@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/services/feature_gate.dart';
 import '../../../core/services/notification_service.dart';
+import '../../../core/services/purchase_service.dart';
 import '../../../core/services/settings_provider.dart';
 import '../../../shared/widgets/glass_container.dart';
 import '../../exam/providers/exam_profile_provider.dart';
@@ -28,6 +30,11 @@ class SettingsView extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
         children: [
+          // ============= BAYKUŞ+ =============
+          const _SectionTitle(title: 'Baykuş+'),
+          const _PremiumSettingsCard(),
+          const SizedBox(height: 24),
+
           // ============= YKS PROFİL =============
           if (profile != null) ...[
             const _SectionTitle(title: 'YKS Profili'),
@@ -357,6 +364,114 @@ class SettingsView extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Ayarlar ekranındaki Baykuş+ üyelik kartı.
+class _PremiumSettingsCard extends ConsumerWidget {
+  const _PremiumSettingsCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+    final purchase = ref.watch(purchaseProvider);
+
+    if (purchase.isPremium) {
+      return GlassContainer(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(14),
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Icon(Icons.workspace_premium_rounded,
+                color: theme.colorScheme.primary, size: 32),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Baykuş+ Üyesi',
+                      style: textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.bold)),
+                  Text(
+                    'Tüm premium özelliklere erişimin var',
+                    style: textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.check_circle_rounded,
+                color: theme.colorScheme.primary),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        InkWell(
+          onTap: () => showPaywall(context),
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  theme.colorScheme.primary,
+                  theme.colorScheme.secondary,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.workspace_premium_rounded,
+                    color: Colors.white, size: 32),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Baykuş+ Edin',
+                          style: textTheme.titleMedium?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          )),
+                      Text(
+                        'Sınırsız özellik, reklamsız deneyim',
+                        style: textTheme.bodySmall?.copyWith(
+                          color: Colors.white.withAlpha(220),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right, color: Colors.white),
+              ],
+            ),
+          ),
+        ),
+        TextButton(
+          onPressed: () async {
+            final messenger = ScaffoldMessenger.of(context);
+            final restored = await ref
+                .read(purchaseProvider.notifier)
+                .restorePurchases();
+            messenger.showSnackBar(SnackBar(
+              content: Text(restored
+                  ? 'Baykuş+ geri yüklendi 🎉'
+                  : 'Aktif bir abonelik bulunamadı.'),
+            ));
+          },
+          child: const Text('Satın Alımları Geri Yükle'),
+        ),
+      ],
     );
   }
 }

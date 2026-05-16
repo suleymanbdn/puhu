@@ -1,0 +1,10 @@
+# Bu dosyayı "key.properties" olarak kopyalayın (android/key.properties) ve değerleri doldurun.
+# key.properties .gitignore içindedir; repoya commit etmeyin.
+#
+# Alternatif: Ortam değişkenleri KEY_STORE_PASSWORD, KEY_PASSWORD, KEY_ALIAS
+
+storePassword=PLAY_STORE_UPLOAD_STORE_PAROLASI
+keyPassword=PLAY_STORE_UPLOAD_KEY_PAROLASI
+keyAlias=upload
+# android/app klasörüne göre yol (varsayılan: app içindeki jks)
+storeFile=upload-keystore.jks
