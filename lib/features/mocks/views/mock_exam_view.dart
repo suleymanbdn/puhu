@@ -211,7 +211,7 @@ class _LockedChartTeaser extends StatelessWidget {
                     ?.copyWith(fontWeight: FontWeight.w700)),
             const SizedBox(height: 2),
             Text(
-              'Deneme net gelişimini grafikle gör — Baykuş+',
+              'Deneme net gelişimini grafikle gör — Puhu+',
               style: textTheme.bodySmall
                   ?.copyWith(color: colorScheme.onSurfaceVariant),
               textAlign: TextAlign.center,
@@ -255,7 +255,7 @@ class _LockedExamsCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   '$count önceki deneme gizli. Tüm geçmişi görmek için '
-                  'Baykuş+ edin.',
+                  'Puhu+ edin.',
                   style: textTheme.bodySmall,
                 ),
               ),

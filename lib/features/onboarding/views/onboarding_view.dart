@@ -230,7 +230,7 @@ class _OnboardingViewState extends ConsumerState<OnboardingView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Selam, ben Baykuş 🦉',
+          Text('Selam, ben Puhu 🦉',
               style: textTheme.headlineMedium
                   ?.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),

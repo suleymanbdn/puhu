@@ -476,7 +476,7 @@ class _LockedWeakTopics extends StatelessWidget {
                     ?.copyWith(fontWeight: FontWeight.w700)),
             const SizedBox(height: 2),
             Text(
-              'Hangi konularda zayıf olduğunu gör, çalışmanı odakla — Baykuş+',
+              'Hangi konularda zayıf olduğunu gör, çalışmanı odakla — Puhu+',
               style: textTheme.bodySmall
                   ?.copyWith(color: colorScheme.onSurfaceVariant),
               textAlign: TextAlign.center,

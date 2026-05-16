@@ -3,7 +3,7 @@ class AppConstants {
   AppConstants._();
 
   // Uygulama Bilgileri
-  static const String appName = 'Baykuş';
+  static const String appName = 'Puhu';
   static const String appTagline = 'YKS Çalışma Asistanın';
   static const String appVersion = '1.0.0';
 

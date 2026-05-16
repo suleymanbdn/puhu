@@ -1,16 +1,16 @@
 /// RevenueCat yapılandırması — API key'leri ve ürün kimlikleri.
 ///
-/// API key'leri RevenueCat panelinde "Baykuş" projesi oluşturulduktan sonra
+/// API key'leri RevenueCat panelinde "Puhu" projesi oluşturulduktan sonra
 /// alınır (Project Settings > API Keys > Public app-specific keys).
 class RevenueCatConfig {
   RevenueCatConfig._();
 
   /// iOS public SDK key (appl_... ile başlar).
-  /// RevenueCat > Baykuş projesi > Apple App Store app > Public SDK key.
+  /// RevenueCat > Puhu projesi > Apple App Store app > Public SDK key.
   static const String iosApiKey = 'appl_cOBdtUyoRibMFFVMWlFpspRehOh';
 
   /// Android public SDK key (goog_... ile başlar).
-  /// RevenueCat > Baykuş projesi > Google Play app > Public SDK key.
+  /// RevenueCat > Puhu projesi > Google Play app > Public SDK key.
   static const String androidApiKey = 'goog_PLACEHOLDER_ANDROID_KEY';
 
   /// Premium erişimi temsil eden entitlement kimliği.

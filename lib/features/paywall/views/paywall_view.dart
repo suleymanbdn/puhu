@@ -8,7 +8,7 @@ import '../../../core/constants/revenuecat_config.dart';
 import '../../../core/services/feature_gate.dart';
 import '../../../core/services/purchase_service.dart';
 
-/// Baykuş+ premium tanıtım / satın alma ekranı.
+/// Puhu+ premium tanıtım / satın alma ekranı.
 class PaywallView extends ConsumerStatefulWidget {
   const PaywallView({super.key, this.highlightFeature});
 
@@ -107,7 +107,7 @@ class _PaywallViewState extends ConsumerState<PaywallView> {
               color: Colors.white, size: 40),
         ),
         const SizedBox(height: AppSizes.lg),
-        Text('Baykuş+', style: theme.textTheme.headlineLarge),
+        Text('Puhu+', style: theme.textTheme.headlineLarge),
         const SizedBox(height: AppSizes.xs),
         Text(
           'YKS yolculuğunu tam potansiyelinle sürdür',
@@ -181,7 +181,7 @@ class _PaywallViewState extends ConsumerState<PaywallView> {
     final plan = plans[_selected];
     final ctaText = plan.hasTrial
         ? '3 Gün Ücretsiz Dene'
-        : 'Baykuş+ Edin';
+        : 'Puhu+ Edin';
 
     return Container(
       padding: const EdgeInsets.fromLTRB(
@@ -272,7 +272,7 @@ class _PaywallViewState extends ConsumerState<PaywallView> {
         await ref.read(purchaseProvider.notifier).purchasePackage(plan.package!);
     if (success && mounted) {
       messenger.showSnackBar(const SnackBar(
-        content: Text('Baykuş+ aktifleştirildi 🎉'),
+        content: Text('Puhu+ aktifleştirildi 🎉'),
       ));
       navigator.maybePop();
     }
@@ -285,7 +285,7 @@ class _PaywallViewState extends ConsumerState<PaywallView> {
     if (!mounted) return;
     messenger.showSnackBar(SnackBar(
       content: Text(restored
-          ? 'Baykuş+ geri yüklendi 🎉'
+          ? 'Puhu+ geri yüklendi 🎉'
           : 'Aktif bir abonelik bulunamadı.'),
     ));
   }
@@ -478,7 +478,7 @@ class _PremiumActiveScreen extends StatelessWidget {
                 Icon(Icons.workspace_premium_rounded,
                     size: 80, color: theme.colorScheme.primary),
                 const SizedBox(height: AppSizes.lg),
-                Text('Baykuş+ aktif', style: theme.textTheme.headlineMedium),
+                Text('Puhu+ aktif', style: theme.textTheme.headlineMedium),
                 const SizedBox(height: AppSizes.sm),
                 Text(
                   'Tüm premium özelliklere erişimin var. '

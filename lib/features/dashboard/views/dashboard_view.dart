@@ -238,7 +238,7 @@ class DashboardView extends ConsumerWidget {
             targetMin: dailyTargetMin,
           ),
 
-          // Baykuş+ tanıtım kartı (premium olmayanlar için)
+          // Puhu+ tanıtım kartı (premium olmayanlar için)
           if (!isPremium) ...[
             const SizedBox(height: 16),
             const _PremiumPromoCard(),
@@ -249,7 +249,7 @@ class DashboardView extends ConsumerWidget {
   }
 }
 
-/// Anasayfada gösterilen Baykuş+ tanıtım kartı.
+/// Anasayfada gösterilen Puhu+ tanıtım kartı.
 class _PremiumPromoCard extends StatelessWidget {
   const _PremiumPromoCard();
 
@@ -284,7 +284,7 @@ class _PremiumPromoCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Baykuş+ ile potansiyelini aç',
+                    'Puhu+ ile potansiyelini aç',
                     style: textTheme.titleMedium?.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w700,
@@ -556,18 +556,18 @@ class _MotivationCard extends StatelessWidget {
 
   String get _message {
     if (todayMin >= targetMin && targetMin > 0) {
-      return '🎯 Bugünün hedefini aştın! Baykuş bile şaşırdı 🦉';
+      return '🎯 Bugünün hedefini aştın! Puhu bile şaşırdı 🦉';
     }
     if (streak >= 7 && studiedToday) {
       return '🔥 $streak günlük muhteşem bir seri! Tüy bırakma 🦉';
     }
     if (streak > 0 && !studiedToday) {
-      return '⚡ Baykuş seni bekliyor — kısa bir Pomodoro yeter.';
+      return '⚡ Puhu seni bekliyor — kısa bir Pomodoro yeter.';
     }
     if (todayMin > 0) {
       return '💪 Güzel başlangıç! Hedefe yaklaşıyorsun.';
     }
-    return '🦉 Baykuş ile harika bir gün — ilk Pomodoro\'yu başlat.';
+    return '🦉 Puhu ile harika bir gün — ilk Pomodoro\'yu başlat.';
   }
 
   @override

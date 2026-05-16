@@ -16,7 +16,7 @@ class FreeLimits {
   static const int mockExamsVisible = 2;
 }
 
-/// Premium (Baykuş+) ile açılan özellikler.
+/// Premium (Puhu+) ile açılan özellikler.
 enum PremiumFeature {
   /// Sınırsız soru günlüğü kaydı.
   unlimitedQuestionLog,
@@ -77,7 +77,7 @@ final canAddQuestionLogProvider = Provider<bool>((ref) {
   return ref.watch(remainingQuestionLogsProvider) > 0;
 });
 
-/// Baykuş+ paywall ekranını tam ekran modal olarak açar.
+/// Puhu+ paywall ekranını tam ekran modal olarak açar.
 Future<void> showPaywall(
   BuildContext context, {
   PremiumFeature? feature,

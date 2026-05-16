@@ -152,7 +152,7 @@ class QuestionLogView extends ConsumerWidget {
           }
         },
         icon: Icon(canAdd ? Icons.add : Icons.lock_outline),
-        label: Text(canAdd ? 'Soru Ekle' : 'Baykuş+ ile Sınırsız'),
+        label: Text(canAdd ? 'Soru Ekle' : 'Puhu+ ile Sınırsız'),
       ),
     );
   }
@@ -192,7 +192,7 @@ class _RemainingBanner extends StatelessWidget {
             Expanded(
               child: Text(
                 isEmpty
-                    ? 'Günlük ücretsiz limit doldu. Baykuş+ ile sınırsız kayıt.'
+                    ? 'Günlük ücretsiz limit doldu. Puhu+ ile sınırsız kayıt.'
                     : 'Bugün $remaining ücretsiz kayıt hakkın kaldı.',
                 style: textTheme.bodySmall?.copyWith(color: color),
               ),

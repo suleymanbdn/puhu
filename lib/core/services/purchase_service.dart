@@ -17,7 +17,7 @@ class PurchaseState {
     this.error,
   });
 
-  /// Kullanıcının premium (Baykuş+) erişimi var mı?
+  /// Kullanıcının premium (Puhu+) erişimi var mı?
   final bool isPremium;
 
   /// Offering / satın alma işlemi sürüyor mu?

@@ -31,7 +31,7 @@ class SettingsView extends ConsumerWidget {
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
         children: [
           // ============= BAYKUŞ+ =============
-          const _SectionTitle(title: 'Baykuş+'),
+          const _SectionTitle(title: 'Puhu+'),
           const _PremiumSettingsCard(),
           const SizedBox(height: 24),
 
@@ -368,7 +368,7 @@ class SettingsView extends ConsumerWidget {
   }
 }
 
-/// Ayarlar ekranındaki Baykuş+ üyelik kartı.
+/// Ayarlar ekranındaki Puhu+ üyelik kartı.
 class _PremiumSettingsCard extends ConsumerWidget {
   const _PremiumSettingsCard();
 
@@ -392,7 +392,7 @@ class _PremiumSettingsCard extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Baykuş+ Üyesi',
+                  Text('Puhu+ Üyesi',
                       style: textTheme.titleMedium
                           ?.copyWith(fontWeight: FontWeight.bold)),
                   Text(
@@ -438,7 +438,7 @@ class _PremiumSettingsCard extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Baykuş+ Edin',
+                      Text('Puhu+ Edin',
                           style: textTheme.titleMedium?.copyWith(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -465,7 +465,7 @@ class _PremiumSettingsCard extends ConsumerWidget {
                 .restorePurchases();
             messenger.showSnackBar(SnackBar(
               content: Text(restored
-                  ? 'Baykuş+ geri yüklendi 🎉'
+                  ? 'Puhu+ geri yüklendi 🎉'
                   : 'Aktif bir abonelik bulunamadı.'),
             ));
           },
