@@ -7,6 +7,7 @@ import '../../../core/services/feature_gate.dart';
 import '../../../core/services/notification_service.dart';
 import '../../../core/services/purchase_service.dart';
 import '../../../core/services/settings_provider.dart';
+import '../../../shared/widgets/app_background.dart';
 import '../../../shared/widgets/glass_container.dart';
 import '../../exam/providers/exam_profile_provider.dart';
 
@@ -27,9 +28,10 @@ class SettingsView extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Ayarlar'),
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
-        children: [
+      body: AppBackground(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+          children: [
           // ============= BAYKUŞ+ =============
           const _SectionTitle(title: 'Puhu+'),
           const _PremiumSettingsCard(),
@@ -274,7 +276,8 @@ class SettingsView extends ConsumerWidget {
             ),
             tileColor: colorScheme.surface,
           ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -11,6 +11,7 @@ import '../../exam/providers/exam_profile_provider.dart';
 import '../../subjects/models/subject.dart';
 import '../models/mock_exam.dart';
 import '../providers/mock_exam_provider.dart';
+import '../../../shared/widgets/app_background.dart';
 
 class MockExamView extends ConsumerWidget {
   const MockExamView({super.key});
@@ -47,7 +48,8 @@ class MockExamView extends ConsumerWidget {
         isPremium ? ordered : ordered.take(FreeLimits.mockExamsVisible).toList();
     final lockedCount = ordered.length - visibleExams.length;
 
-    return Scaffold(
+    return AppBackground(
+      child: Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Denemeler'),
@@ -134,7 +136,7 @@ class MockExamView extends ConsumerWidget {
         icon: const Icon(Icons.add),
         label: const Text('Deneme Ekle'),
       ),
-    );
+    ));
   }
 }
 

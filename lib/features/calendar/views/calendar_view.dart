@@ -10,6 +10,7 @@ import '../../tasks/widgets/task_card.dart';
 import '../../tasks/widgets/add_task_bottom_sheet.dart';
 import '../../../shared/widgets/empty_state_widget.dart';
 import '../../../shared/widgets/glass_container.dart';
+import '../../../shared/widgets/app_background.dart';
 
 /// Takvim görünümü - Haftalık ve Aylık
 class CalendarView extends ConsumerStatefulWidget {
@@ -32,7 +33,8 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
     final tasksForDate = ref.watch(tasksForSelectedDateProvider);
     final taskDates = ref.watch(taskDatesProvider);
 
-    return Scaffold(
+    return AppBackground(
+      child: Scaffold(
       backgroundColor: Colors.transparent, // Arka plandaki gradientin görünmesi için
       appBar: AppBar(
         title: const Text('Takvim'),
@@ -116,7 +118,7 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
           child: const Icon(Icons.add),
         ),
       ),
-    );
+    ));
   }
 
   Widget _buildCalendar(

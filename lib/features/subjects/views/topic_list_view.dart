@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../models/subject.dart';
 import '../models/topic.dart';
 import '../providers/topic_provider.dart';
+import '../../../shared/widgets/app_background.dart';
 
 /// Bir dersin tüm konularını listeleyen ekran
 class TopicListView extends ConsumerWidget {
@@ -31,7 +32,8 @@ class TopicListView extends ConsumerWidget {
         s: topics.where((t) => t.status == s).toList(),
     };
 
-    return Scaffold(
+    return AppBackground(
+      child: Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: Row(
@@ -110,7 +112,7 @@ class TopicListView extends ConsumerWidget {
           ),
         ],
       ),
-    );
+    ));
   }
 }
 
