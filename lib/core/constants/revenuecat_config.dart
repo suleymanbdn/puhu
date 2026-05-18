@@ -1,3 +1,5 @@
+import 'dart:io';
+
 /// RevenueCat yapılandırması — API key'leri ve ürün kimlikleri.
 ///
 /// API key'leri RevenueCat panelinde "Puhu" projesi oluşturulduktan sonra
@@ -25,9 +27,10 @@ class RevenueCatConfig {
   static const String productYearly = 'baykus_premium_yearly';
   static const String productLifetime = 'baykus_premium_lifetime';
 
-  /// API key'lerin gerçek değerlerle doldurulup doldurulmadığını kontrol eder.
-  /// Placeholder ise satın alma akışı devre dışı bırakılır.
-  static bool get isConfigured =>
-      !iosApiKey.contains('PLACEHOLDER') &&
-      !androidApiKey.contains('PLACEHOLDER');
+  /// Çalışılan platformun API key'inin gerçek değerle doldurulup
+  /// doldurulmadığını kontrol eder. Placeholder ise satın alma devre dışı.
+  static bool get isConfigured {
+    final key = Platform.isIOS ? iosApiKey : androidApiKey;
+    return !key.contains('PLACEHOLDER');
+  }
 }
