@@ -55,12 +55,17 @@ class PurchaseNotifier extends Notifier<PurchaseState> {
   @override
   PurchaseState build() {
     if (RevenueCatConfig.isConfigured) {
-      Purchases.addCustomerInfoUpdateListener(_onCustomerInfoUpdate);
       ref.onDispose(() {
         Purchases.removeCustomerInfoUpdateListener(_onCustomerInfoUpdate);
       });
-      // Asenkron ilk yükleme.
-      Future.microtask(refresh);
+      // Listener kaydı ve ilk yükleme build() tamamlandıktan SONRA yapılır.
+      // RevenueCat, addCustomerInfoUpdateListener çağrısında listener'ı
+      // senkron tetikleyebilir; bu da _onCustomerInfoUpdate içinde state'e
+      // build bitmeden erişip "uninitialized provider" hatasına yol açar.
+      Future.microtask(() {
+        Purchases.addCustomerInfoUpdateListener(_onCustomerInfoUpdate);
+        refresh();
+      });
     }
     return const PurchaseState();
   }
