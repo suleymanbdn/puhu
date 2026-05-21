@@ -55,8 +55,8 @@
 }
 
 ## Keep app models and MainActivity
--keep class com.baykus.app.** { *; }
--keep class com.baykus.app.MainActivity { *; }
+-keep class com.zamanyonetimi.app.** { *; }
+-keep class com.zamanyonetimi.app.MainActivity { *; }
 
 ## General Android
 -keepattributes InnerClasses

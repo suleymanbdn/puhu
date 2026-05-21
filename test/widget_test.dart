@@ -1,12 +1,12 @@
-// Baykuş — temel smoke testleri.
+// Puhu — temel smoke testleri.
 
-import 'package:baykus/core/constants/app_constants.dart';
-import 'package:baykus/core/services/feature_gate.dart';
+import 'package:puhu/core/constants/app_constants.dart';
+import 'package:puhu/core/services/feature_gate.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test('Uygulama sabitleri tanımlı', () {
-    expect(AppConstants.appName, 'Baykuş');
+    expect(AppConstants.appName, 'Puhu');
     expect(AppConstants.androidApplicationId, 'com.zamanyonetimi.app');
   });
 
