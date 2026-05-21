@@ -13,7 +13,7 @@ class RevenueCatConfig {
 
   /// Android public SDK key (goog_... ile başlar).
   /// RevenueCat > Puhu projesi > Google Play app > Public SDK key.
-  static const String androidApiKey = 'goog_PLACEHOLDER_ANDROID_KEY';
+  static const String androidApiKey = 'goog_KmswsmXibxFczRrrrjqXjlNDftB';
 
   /// Premium erişimi temsil eden entitlement kimliği.
   /// RevenueCat > Entitlements bölümünde bu isimle oluşturulmalı.
