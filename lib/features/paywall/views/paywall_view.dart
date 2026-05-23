@@ -23,7 +23,8 @@ class _PaywallViewState extends ConsumerState<PaywallView> {
   /// Seçili plan: 0 = aylık, 1 = yıllık, 2 = lifetime.
   int _selected = 1;
 
-  static const _privacyUrl = 'https://github.com/suleymanbdn';
+  static const _privacyUrl =
+      'https://suleymanbdn.github.io/puhu/privacy-policy.html';
   static const _termsUrl =
       'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
 
@@ -179,9 +180,15 @@ class _PaywallViewState extends ConsumerState<PaywallView> {
     PurchaseState purchase,
   ) {
     final plan = plans[_selected];
-    final ctaText = plan.hasTrial
-        ? '3 Gün Ücretsiz Dene'
-        : 'Puhu+ Edin';
+    // Gerçek bir satın alınabilir paket yoksa (RevenueCat offering boş veya
+    // mağaza ürünleri yüklenememiş) butonu pasifleştir; aksi halde basıldığında
+    // hata mesajı çıkar (App Store 2.1b reddine yol açar).
+    final available = plan.package != null;
+    final ctaText = !available
+        ? 'Abonelikler yüklenemedi'
+        : plan.hasTrial
+            ? '3 Gün Ücretsiz Dene'
+            : 'Puhu+ Edin';
 
     return Container(
       padding: const EdgeInsets.fromLTRB(
@@ -202,11 +209,32 @@ class _PaywallViewState extends ConsumerState<PaywallView> {
             ),
             const SizedBox(height: AppSizes.sm),
           ],
+          if (!available) ...[
+            Text(
+              'Abonelikler şu anda yüklenemiyor. Lütfen internet bağlantını '
+              'kontrol edip tekrar dene.',
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSizes.sm),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: purchase.isLoading
+                    ? null
+                    : () => ref.read(purchaseProvider.notifier).refresh(),
+                child: const Text('Yeniden Dene'),
+              ),
+            ),
+            const SizedBox(height: AppSizes.xs),
+          ],
           SizedBox(
             width: double.infinity,
             child: FilledButton(
-              onPressed:
-                  purchase.isLoading ? null : () => _onPurchase(plan),
+              onPressed: (purchase.isLoading || !available)
+                  ? null
+                  : () => _onPurchase(plan),
               child: purchase.isLoading
                   ? const SizedBox(
                       width: 20,
