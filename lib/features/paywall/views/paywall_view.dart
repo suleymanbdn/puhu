@@ -29,6 +29,15 @@ class _PaywallViewState extends ConsumerState<PaywallView> {
       'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
 
   @override
+  void initState() {
+    super.initState();
+    // Paywall her açılışında offering'leri yeniden çek. Uygulama açılışındaki
+    // ilk fetch StoreKit cold-start nedeniyle boş dönmüş olabilir; burada
+    // tekrar denenince ürünler yüklenir (App Store 2.1b "failed to load" fix).
+    Future.microtask(() => ref.read(purchaseProvider.notifier).refresh());
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final purchase = ref.watch(purchaseProvider);

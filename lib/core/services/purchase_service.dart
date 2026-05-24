@@ -85,14 +85,7 @@ class PurchaseNotifier extends Notifier<PurchaseState> {
     if (!RevenueCatConfig.isConfigured) return;
     try {
       final info = await Purchases.getCustomerInfo();
-      Offering? offering;
-      try {
-        final offerings = await Purchases.getOfferings();
-        offering = offerings.current ??
-            offerings.getOffering(RevenueCatConfig.defaultOffering);
-      } on PlatformException catch (e) {
-        debugPrint('Offerings yüklenemedi: $e');
-      }
+      final offering = await _fetchOfferingWithRetry();
       state = state.copyWith(
         isPremium: _hasPremium(info),
         offering: offering,
@@ -102,6 +95,34 @@ class PurchaseNotifier extends Notifier<PurchaseState> {
       debugPrint('Satın alma durumu yüklenemedi: $e');
       state = state.copyWith(error: e.message);
     }
+  }
+
+  /// Offering'leri birkaç kez deneyerek çeker.
+  ///
+  /// StoreKit cold-start'ta (özellikle uygulama ilk açılışında) ürünler
+  /// hazır olmayabilir; tek deneme başarısız olursa paket listesi boş kalır
+  /// ve paywall "yüklenemedi" gösterir. Bu yüzden paketli bir offering
+  /// gelene kadar artan beklemeyle tekrar denenir.
+  Future<Offering?> _fetchOfferingWithRetry({int attempts = 4}) async {
+    Offering? last;
+    for (var i = 0; i < attempts; i++) {
+      try {
+        final offerings = await Purchases.getOfferings();
+        final offering = offerings.current ??
+            offerings.getOffering(RevenueCatConfig.defaultOffering);
+        last = offering ?? last;
+        // Paketler StoreKit'ten başarıyla çözüldüyse hemen dön.
+        if (offering != null && offering.availablePackages.isNotEmpty) {
+          return offering;
+        }
+      } on PlatformException catch (e) {
+        debugPrint('Offerings yüklenemedi (deneme ${i + 1}/$attempts): $e');
+      }
+      if (i < attempts - 1) {
+        await Future.delayed(Duration(milliseconds: 800 * (i + 1)));
+      }
+    }
+    return last;
   }
 
   /// Verilen paketi satın alır. Başarılıysa true döner.

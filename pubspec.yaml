@@ -1,7 +1,7 @@
 name: puhu
 description: "Puhu — YKS çalışma asistanın. Konu takibi, soru çözüm, deneme analizi, akıllı tekrar."
 publish_to: 'none'
-version: 1.1.0+108
+version: 1.1.0+109
 
 environment:
   sdk: ^3.5.0
