@@ -8,6 +8,8 @@ import '../../../core/services/feature_gate.dart';
 import '../../../core/services/purchase_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/quick_log_sheet.dart';
+import '../../coach/models/study_plan.dart';
+import '../../coach/providers/coach_provider.dart';
 import '../../exam/providers/exam_profile_provider.dart';
 import '../../mistakes/providers/mistake_provider.dart';
 import '../../mocks/providers/mock_exam_provider.dart';
@@ -134,20 +136,8 @@ class DashboardView extends ConsumerWidget {
           _StreakHero(streak: streak),
           const SizedBox(height: 12),
 
-          // === ÜST FOLD: Bugün başla CTA ===
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: () => context.go('/timer'),
-              icon: const Icon(Icons.play_arrow_rounded),
-              label: const Text('Bugün çalışmaya başla'),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                textStyle: textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w700),
-              ),
-            ),
-          ),
+          // === ÜST FOLD: Algoritmik koç bugün önerisi ===
+          const _CoachTodayCard(),
           const SizedBox(height: 24),
 
           // === ALT FOLD: Detaylı istatistikler ===
@@ -898,6 +888,133 @@ class _MistakeBucketCard extends ConsumerWidget {
             ),
             Icon(Icons.chevron_right_rounded,
                 color: AppColors.strongOf(color)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Anasayfada koç bugün önerisi kartı.
+///
+/// Algoritmik koç [todayRecommendationProvider]'dan gelen öneriyi gösterir;
+/// tap edince ya doğrudan aksiyon route'una gider (timer / mistake review
+/// vb.) ya da uzun basışla /coach detay sayfasına götürür.
+class _CoachTodayCard extends ConsumerWidget {
+  const _CoachTodayCard();
+
+  Color _color(TodayRecommendation r) {
+    switch (r.kind) {
+      case RecommendationKind.reviewMistakes:
+        return AppColors.danger;
+      case RecommendationKind.startStreak:
+        return AppColors.streak;
+      case RecommendationKind.focusWeakest:
+        return AppColors.focus;
+      case RecommendationKind.maintain:
+        return AppColors.success;
+    }
+  }
+
+  IconData _icon(TodayRecommendation r) {
+    switch (r.kind) {
+      case RecommendationKind.reviewMistakes:
+        return Icons.replay_circle_filled_rounded;
+      case RecommendationKind.startStreak:
+        return Icons.local_fire_department_rounded;
+      case RecommendationKind.focusWeakest:
+        return Icons.center_focus_strong_rounded;
+      case RecommendationKind.maintain:
+        return Icons.verified_rounded;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final rec = ref.watch(todayRecommendationProvider);
+    final textTheme = Theme.of(context).textTheme;
+    if (rec == null) {
+      return SizedBox(
+        width: double.infinity,
+        child: FilledButton.icon(
+          onPressed: () => context.go('/timer'),
+          icon: const Icon(Icons.play_arrow_rounded),
+          label: const Text('Bugün çalışmaya başla'),
+          style: FilledButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            textStyle: textTheme.titleMedium
+                ?.copyWith(fontWeight: FontWeight.w700),
+          ),
+        ),
+      );
+    }
+
+    final color = _color(rec);
+    return InkWell(
+      borderRadius: BorderRadius.circular(20),
+      onTap: () => context.push(rec.actionRoute),
+      onLongPress: () => context.push('/coach'),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [color, color.withAlpha(180)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white.withAlpha(60),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(_icon(rec), color: Colors.white, size: 26),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.auto_awesome_rounded,
+                          color: Colors.white.withAlpha(220), size: 13),
+                      const SizedBox(width: 4),
+                      Text(
+                        'KOÇ ÖNERİSİ',
+                        style: textTheme.labelSmall?.copyWith(
+                          color: Colors.white.withAlpha(220),
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    rec.title,
+                    style: textTheme.titleMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      height: 1.15,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              rec.mistakeReview
+                  ? Icons.replay_rounded
+                  : Icons.play_arrow_rounded,
+              color: Colors.white,
+              size: 28,
+            ),
           ],
         ),
       ),

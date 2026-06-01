@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/calendar/views/calendar_view.dart';
+import '../../features/coach/views/coach_view.dart';
 import '../../features/dashboard/views/dashboard_view.dart';
 import '../../features/exam/providers/exam_profile_provider.dart';
 import '../../features/mistakes/views/mistake_list_view.dart';
@@ -33,6 +34,7 @@ class AppRoutes {
   static const String paywall = '/paywall';
   static const String mistakes = '/mistakes';
   static const String mistakeReview = '/mistakes/review';
+  static const String coach = '/coach';
   // Eski path - geriye dönük uyumluluk
   static const String tasks = '/tasks';
 }
@@ -101,6 +103,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const MistakeReviewView(),
           ),
         ],
+      ),
+      GoRoute(
+        path: AppRoutes.coach,
+        name: 'coach',
+        builder: (context, state) => const CoachView(),
       ),
       // Alt navigation shell (5 sekme)
       StatefulShellRoute.indexedStack(
