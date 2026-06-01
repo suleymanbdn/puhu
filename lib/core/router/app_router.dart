@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../features/calendar/views/calendar_view.dart';
 import '../../features/dashboard/views/dashboard_view.dart';
 import '../../features/exam/providers/exam_profile_provider.dart';
+import '../../features/mistakes/views/mistake_list_view.dart';
+import '../../features/mistakes/views/mistake_review_view.dart';
 import '../../features/mocks/views/mock_exam_view.dart';
 import '../../features/onboarding/views/onboarding_view.dart';
 import '../../features/paywall/views/paywall_view.dart';
@@ -29,6 +31,8 @@ class AppRoutes {
   static const String settings = '/settings';
   static const String mocks = '/mocks';
   static const String paywall = '/paywall';
+  static const String mistakes = '/mistakes';
+  static const String mistakeReview = '/mistakes/review';
   // Eski path - geriye dönük uyumluluk
   static const String tasks = '/tasks';
 }
@@ -85,6 +89,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.calendar,
         name: 'calendar',
         builder: (context, state) => const CalendarView(),
+      ),
+      GoRoute(
+        path: AppRoutes.mistakes,
+        name: 'mistakes',
+        builder: (context, state) => const MistakeListView(),
+        routes: [
+          GoRoute(
+            path: 'review',
+            name: 'mistakeReview',
+            builder: (context, state) => const MistakeReviewView(),
+          ),
+        ],
       ),
       // Alt navigation shell (5 sekme)
       StatefulShellRoute.indexedStack(

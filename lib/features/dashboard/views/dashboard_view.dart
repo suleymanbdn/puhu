@@ -9,6 +9,7 @@ import '../../../core/services/purchase_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/quick_log_sheet.dart';
 import '../../exam/providers/exam_profile_provider.dart';
+import '../../mistakes/providers/mistake_provider.dart';
 import '../../mocks/providers/mock_exam_provider.dart';
 import '../../questions/providers/question_log_provider.dart';
 import '../../streak/providers/streak_freeze_provider.dart';
@@ -220,6 +221,10 @@ class DashboardView extends ConsumerWidget {
               ),
             ],
           ),
+          const SizedBox(height: 16),
+
+          // Hata Sepeti tanıtım / bekleyen sayısı
+          const _MistakeBucketCard(),
           const SizedBox(height: 24),
 
           // Motivasyon
@@ -814,6 +819,86 @@ class _MotivationCard extends StatelessWidget {
         style: textTheme.bodyMedium?.copyWith(
           color: colorScheme.primary,
           fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+}
+
+/// Anasayfada Hata Sepeti'ne erişim kartı.
+///
+/// Bekleyen hata varsa "X hata tekrar bekliyor" + canlı CTA gösterir;
+/// yoksa sade tanıtım: "Yanlışlarını sepete at, aralıklı tekrarla unutma."
+class _MistakeBucketCard extends ConsumerWidget {
+  const _MistakeBucketCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final pending = ref.watch(pendingMistakeCountProvider);
+    final active = ref.watch(activeMistakeCountProvider);
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    final showPending = pending > 0;
+    final color = showPending ? AppColors.danger : AppColors.focus;
+
+    return InkWell(
+      onTap: () => context.push('/mistakes'),
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.subtleOf(color),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: AppColors.softOf(color), width: 1),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.softOf(color),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                showPending
+                    ? Icons.replay_circle_filled_rounded
+                    : Icons.bookmark_outline_rounded,
+                color: color,
+                size: 26,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    showPending
+                        ? '$pending hata tekrar bekliyor'
+                        : 'Hata Sepeti',
+                    style: textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.strongOf(color),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    showPending
+                        ? 'Aralıklı tekrar seansını başlat'
+                        : (active > 0
+                            ? '$active aktif hata — gün geldikçe tekrar gör'
+                            : 'Yanlışlarını sepete at, aralıklı tekrarla unutma'),
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded,
+                color: AppColors.strongOf(color)),
+          ],
         ),
       ),
     );
