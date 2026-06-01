@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -10,6 +11,7 @@ import '../../../core/widgets/quick_log_sheet.dart';
 import '../../exam/providers/exam_profile_provider.dart';
 import '../../mocks/providers/mock_exam_provider.dart';
 import '../../questions/providers/question_log_provider.dart';
+import '../../streak/providers/streak_freeze_provider.dart';
 import '../../streak/providers/streak_provider.dart';
 import '../../timer/providers/focus_provider.dart';
 
@@ -228,10 +230,24 @@ class DashboardView extends ConsumerWidget {
             targetMin: dailyTargetMin,
           ),
 
-          // Puhu+ tanıtım kartı (premium olmayanlar için)
+          // Puhu+ tanıtım kartı — yalnızca trigger anlarında (her zaman değil)
           if (!isPremium) ...[
-            const SizedBox(height: 16),
-            const _PremiumPromoCard(),
+            Builder(builder: (_) {
+              final remainingLogs =
+                  ref.watch(remainingQuestionLogsProvider);
+              final trigger = _premiumTrigger(
+                streak: streak,
+                daysUntilExam: profile.daysUntilExam,
+                remainingLogs: remainingLogs,
+              );
+              if (trigger == null) return const SizedBox.shrink();
+              return Column(
+                children: [
+                  const SizedBox(height: 16),
+                  _PremiumPromoCard(trigger: trigger),
+                ],
+              );
+            }),
           ],
         ],
       ),
@@ -239,9 +255,69 @@ class DashboardView extends ConsumerWidget {
   }
 }
 
-/// Anasayfada gösterilen Puhu+ tanıtım kartı.
+/// Puhu+ promo kartı için trigger nedeni.
+///
+/// Bu kart artık her zaman değil, yalnızca aşağıdaki anlardan biri
+/// gerçekleştiğinde gösterilir; mesaj o ana göre özelleşir.
+enum _PromoTrigger {
+  /// 7, 30 veya 100 günlük streak milestone.
+  streakMilestone,
+
+  /// Sınava ≤ 30 gün kaldı — aciliyet.
+  examUrgency,
+
+  /// Soru günlüğü limiti dolmak üzere (kalan ≤ 1).
+  limitNearlyHit,
+}
+
+/// Hangi trigger şu an aktif? (Hiçbiri yoksa null → kart gösterilmez.)
+///
+/// Sıralama önem önceliğine göre: limit > sınav > streak.
+_PromoTrigger? _premiumTrigger({
+  required StreakStats streak,
+  required int daysUntilExam,
+  required int remainingLogs,
+}) {
+  if (remainingLogs >= 0 && remainingLogs <= 1) {
+    return _PromoTrigger.limitNearlyHit;
+  }
+  if (daysUntilExam > 0 && daysUntilExam <= 30) {
+    return _PromoTrigger.examUrgency;
+  }
+  if (const {7, 30, 100}.contains(streak.currentStreak)) {
+    return _PromoTrigger.streakMilestone;
+  }
+  return null;
+}
+
+/// Anasayfada gösterilen Puhu+ tanıtım kartı — bağlama duyarlı mesaj.
 class _PremiumPromoCard extends StatelessWidget {
-  const _PremiumPromoCard();
+  const _PremiumPromoCard({required this.trigger});
+  final _PromoTrigger trigger;
+
+  String get _title {
+    switch (trigger) {
+      case _PromoTrigger.streakMilestone:
+        return '🔥 Streak\'in patladı — Puhu+ ile hızını koru';
+      case _PromoTrigger.examUrgency:
+        return '⏰ Sınav yakın — son kulvar için tam destek';
+      case _PromoTrigger.limitNearlyHit:
+        return '📊 Günlük hakkın dolmak üzere — sınırsıza geç';
+    }
+  }
+
+  String get _subtitle {
+    switch (trigger) {
+      case _PromoTrigger.streakMilestone:
+        return 'Sınırsız soru günlüğü, tüm deneme geçmişi ve 5 streak '
+            'freeze/ay';
+      case _PromoTrigger.examUrgency:
+        return 'Tüm deneme geçmişi, zayıf konu analizi ve sınırsız '
+            'soru günlüğü';
+      case _PromoTrigger.limitNearlyHit:
+        return 'Sınırsız soru günlüğü + tüm premium özellikler';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -274,7 +350,7 @@ class _PremiumPromoCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Puhu+ ile potansiyelini aç',
+                    _title,
                     style: textTheme.titleMedium?.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w700,
@@ -282,8 +358,7 @@ class _PremiumPromoCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Sınırsız soru günlüğü, tüm deneme geçmişi ve zayıf '
-                    'konu analizi',
+                    _subtitle,
                     style: textTheme.bodySmall
                         ?.copyWith(color: Colors.white.withAlpha(220)),
                   ),
@@ -301,14 +376,48 @@ class _PremiumPromoCard extends StatelessWidget {
 /// Anasayfa "ana metrik" — streak'i hero olarak gösterir.
 ///
 /// Tasarım kararı: streak YKS öğrencisi için günlük temasın motorudur;
-/// üst fold'da tek satır, tam genişlik, büyük rakam + ateş ikonu.
-class _StreakHero extends StatelessWidget {
+/// üst fold'da tek satır, tam genişlik, büyük rakam + ateş ikonu +
+/// Streak Freeze etkileşimleri (sağ üstte kalan token, dün kurtarma CTA).
+class _StreakHero extends ConsumerWidget {
   const _StreakHero({required this.streak});
   final StreakStats streak;
 
+  Future<void> _useFreeze(BuildContext context, WidgetRef ref) async {
+    final isPremium = ref.read(isPremiumProvider);
+    final yesterday =
+        DateTime.now().subtract(const Duration(days: 1));
+    final ok = await ref
+        .read(streakFreezeProvider.notifier)
+        .freezeDay(yesterday, isPremium: isPremium);
+    if (!context.mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    if (ok) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.shield_rounded, color: Colors.white),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Streak korundu — ${streak.streakIfYesterdayFrozen} güne yükseldi',
+                ),
+              ),
+            ],
+          ),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      HapticFeedback.mediumImpact();
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
+    final remainingFreeze = ref.watch(remainingFreezeTokensProvider);
+    final maxFreeze = ref.watch(maxFreezeTokensProvider);
+
     final color = streak.studiedToday
         ? AppColors.streak
         : AppColors.streakInactive;
@@ -318,6 +427,9 @@ class _StreakHero extends StatelessWidget {
             ? 'Bugün çalışmayı unutma — streak\'i kaybetme'
             : 'İlk gününü başlat 🔥');
 
+    final showFreezeCta = streak.canFreezeYesterday;
+    final hasFreezeToken = remainingFreeze > 0;
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -325,70 +437,161 @@ class _StreakHero extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.softOf(color), width: 1),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.softOf(color),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              streak.studiedToday
-                  ? Icons.local_fire_department
-                  : Icons.local_fire_department_outlined,
-              color: color,
-              size: 32,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.softOf(color),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  streak.studiedToday
+                      ? Icons.local_fire_department
+                      : Icons.local_fire_department_outlined,
+                  color: color,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          streak.currentStreak.toString(),
+                          style: textTheme.displaySmall?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: color,
+                            height: 1,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Text(
+                            'gün streak',
+                            style: textTheme.bodyMedium?.copyWith(
+                              color: color,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
                     Text(
-                      streak.currentStreak.toString(),
-                      style: textTheme.displaySmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: color,
-                        height: 1,
+                      subtitle,
+                      style: textTheme.bodySmall?.copyWith(
+                        color: AppColors.strongOf(color),
                       ),
                     ),
-                    const SizedBox(width: 6),
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 6),
-                      child: Text(
-                        'gün streak',
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: color,
-                          fontWeight: FontWeight.w600,
+                    if (streak.longestStreak > streak.currentStreak) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'En uzun: ${streak.longestStreak} gün',
+                        style: textTheme.labelSmall?.copyWith(
+                          color: AppColors.mediumOf(color),
                         ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: textTheme.bodySmall?.copyWith(
-                    color: AppColors.strongOf(color),
+              ),
+              // Freeze token rozeti — her zaman görünür (kullanıcı varlığını bilsin)
+              Tooltip(
+                message: 'Bu ay kalan streak freeze (donma): '
+                    '$remainingFreeze / $maxFreeze',
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.softOf(AppColors.focus),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.shield_rounded,
+                          color: AppColors.focus, size: 16),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$remainingFreeze',
+                        style: textTheme.labelMedium?.copyWith(
+                          color: AppColors.focus,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                if (streak.longestStreak > streak.currentStreak) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    'En uzun: ${streak.longestStreak} gün',
-                    style: textTheme.labelSmall?.copyWith(
-                      color: AppColors.mediumOf(color),
-                    ),
+              ),
+            ],
+          ),
+          // Dünü kurtar CTA — yalnızca anlamlıysa göster
+          if (showFreezeCta) ...[
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: AppColors.softOf(AppColors.focus),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.shield_outlined,
+                          color: AppColors.focus, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          hasFreezeToken
+                              ? 'Dünü kurtar → streak\'i ${streak.streakIfYesterdayFrozen} güne yükselt'
+                              : 'Aylık freeze hakkın bitti',
+                          style: textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: hasFreezeToken
+                        ? FilledButton.tonalIcon(
+                            icon: const Icon(Icons.shield_rounded),
+                            label: Text('Freeze kullan (kalan: '
+                                '${remainingFreeze - 1}/$maxFreeze)'),
+                            onPressed: () => _useFreeze(context, ref),
+                          )
+                        : FilledButton.icon(
+                            icon: const Icon(
+                                Icons.workspace_premium_rounded),
+                            label: const Text(
+                                'Puhu+ ile 5 freeze/ay\'a yüksel'),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.premium,
+                            ),
+                            onPressed: () => showPaywall(context),
+                          ),
                   ),
                 ],
-              ],
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );

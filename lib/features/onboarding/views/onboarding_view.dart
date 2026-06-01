@@ -99,6 +99,7 @@ class _OnboardingViewState extends ConsumerState<OnboardingView> {
       // Bildirimleri planla
       await NotificationService.instance.scheduleExamReminders(_examDate);
       await NotificationService.instance.scheduleDailyReminder();
+      await NotificationService.instance.scheduleStreakBreakReminder();
 
       if (mounted) {
         context.go('/home');
@@ -239,7 +240,33 @@ class _OnboardingViewState extends ConsumerState<OnboardingView> {
             style: textTheme.bodyLarge
                 ?.copyWith(color: colorScheme.onSurfaceVariant),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withAlpha(20),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.info_outline,
+                    size: 18, color: colorScheme.primary),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'TYT dersleri her alana otomatik dahildir. '
+                    'Alanını seç — TYT + alan derslerin birlikte hazırlanır.',
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
           ...ExamType.values.map((type) {
             final isSelected = type == _selectedExamType;
             return Padding(

@@ -83,7 +83,8 @@ class NotificationService {
       await _plugin.cancel(id: id);
     }
 
-    final milestones = <int>[100, 30, 7, 1];
+    // Daha sık temas: yakına gelirken aciliyet artsın.
+    final milestones = <int>[100, 50, 30, 10, 7, 3, 1];
     int idCounter = 1000;
     for (final daysBefore in milestones) {
       final fireAt = examDate.subtract(Duration(days: daysBefore));
@@ -183,6 +184,56 @@ class NotificationService {
 
   Future<void> cancelDailyReminder() async {
     await _plugin.cancel(id: 500);
+  }
+
+  /// Akşam streak break uyarısı — her gün belirli saatte (varsayılan 20:00)
+  /// tetiklenir. Mesaj kullanıcının streak'ini kaybetmemesi için çalışmaya
+  /// davet eder. Streak Freeze'i olan kullanıcılar için bile motivasyon
+  /// kaynağı; gün içinde çalışan kullanıcı için ise app açtığında
+  /// [cancelStreakBreakReminderToday] ile bugünkü instance kapatılır.
+  Future<void> scheduleStreakBreakReminder({
+    int hour = 20,
+    int minute = 0,
+  }) async {
+    await _plugin.cancel(id: 600);
+
+    final now = DateTime.now();
+    var first = DateTime(now.year, now.month, now.day, hour, minute);
+    if (first.isBefore(now)) {
+      first = first.add(const Duration(days: 1));
+    }
+
+    await _plugin.zonedSchedule(
+      id: 600,
+      title: 'Streak\'ini kaybetme 🔥',
+      body: 'Bugün hâlâ çalışmadıysan kısa bir pomodoro bile yeter.',
+      scheduledDate: tz.TZDateTime.from(first, tz.local),
+      notificationDetails: const NotificationDetails(
+        android: AndroidNotificationDetails(
+          _dailyChannel,
+          'Streak Uyarısı',
+          channelDescription:
+              'Akşam saatlerinde streak\'in kırılmasını engellemek için uyarı',
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+        iOS: DarwinNotificationDetails(),
+      ),
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time, // her gün aynı saat
+    );
+  }
+
+  /// Bugünkü streak uyarısını sustur. Kullanıcı çalıştığını uygulamada
+  /// kanıtladıysa (focus session bitirdiyse) çağırılır.
+  Future<void> cancelStreakBreakReminderToday() async {
+    await _plugin.cancel(id: 600);
+    // Yarın için tekrar planla.
+    await scheduleStreakBreakReminder();
+  }
+
+  Future<void> cancelStreakBreakReminder() async {
+    await _plugin.cancel(id: 600);
   }
 
   Future<void> cancelAll() async {

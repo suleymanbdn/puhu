@@ -268,6 +268,8 @@ class SettingsView extends ConsumerWidget {
                           .scheduleExamReminders(profile.examDate);
                       await NotificationService.instance
                           .scheduleDailyReminder();
+                      await NotificationService.instance
+                          .scheduleStreakBreakReminder();
                     }
                   },
                   activeThumbColor: colorScheme.primary,

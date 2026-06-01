@@ -4,6 +4,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../core/services/notification_service.dart';
 import '../../../core/services/settings_provider.dart';
 import '../../exam/models/exam_profile.dart';
 import '../../exam/providers/exam_profile_provider.dart';
@@ -250,6 +251,15 @@ class FocusTimerNotifier extends StateNotifier<FocusTimerState> {
     // Hive'a kaydet
     final box = Hive.box<FocusSession>(AppConstants.focusSessionsBox);
     await box.put(session.id, session);
+
+    // Kullanıcı bugün çalıştı → bugünkü "streak'ini kaybetme" uyarısını sustur,
+    // yarın için tekrar planla. Sessizce başarısız olsun (bildirimler kapalı
+    // olabilir).
+    if (session.actualMinutes > 0) {
+      try {
+        await NotificationService.instance.cancelStreakBreakReminderToday();
+      } catch (_) {}
+    }
 
     // State'i sıfırla
     reset();

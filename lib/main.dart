@@ -43,6 +43,17 @@ void main() async {
   // SharedPreferences başlatma
   final prefs = await SharedPreferences.getInstance();
 
+  // v1.1.3 migration: mevcut kullanıcılar için bir kez streak break uyarısı
+  // planla. Yeni kullanıcılar onboarding'de zaten alır; eskiler Settings'i
+  // açmadan da uyarıyı görsün. Sessizce başarısız olsun (bildirimler
+  // izinli olmayabilir).
+  if (!(prefs.getBool('streak_break_scheduled_v1') ?? false)) {
+    try {
+      await NotificationService.instance.scheduleStreakBreakReminder();
+      await prefs.setBool('streak_break_scheduled_v1', true);
+    } catch (_) {}
+  }
+
   // Uygulamayı çalıştır
   runApp(
     ProviderScope(
