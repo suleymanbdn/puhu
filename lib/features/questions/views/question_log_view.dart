@@ -55,7 +55,8 @@ class QuestionLogView extends ConsumerWidget {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 124),
+        padding: EdgeInsets.fromLTRB(
+            16, 8, 16, 140 + MediaQuery.of(context).padding.bottom),
         children: [
           // Bugün özeti
           Container(
@@ -115,25 +116,47 @@ class QuestionLogView extends ConsumerWidget {
           const SizedBox(height: 8),
           if (logs.isEmpty)
             Container(
-              padding: const EdgeInsets.all(32),
+              padding: const EdgeInsets.all(28),
               alignment: Alignment.center,
               child: Column(
                 children: [
-                  Icon(Icons.edit_note_outlined,
-                      size: 56, color: colorScheme.outlineVariant),
+                  Icon(Icons.edit_note_rounded,
+                      size: 56, color: colorScheme.primary),
                   const SizedBox(height: 12),
                   Text(
-                    'Henüz soru kaydı yok',
-                    style: textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
+                    'İlk sorunu kaydet',
+                    style: textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Text(
-                    'Aşağıdaki + butonuna basarak başla',
+                    'Çözdüğün soruları dersine göre günlüğe ekle — '
+                    'günlük net\'in, ilerlemen ve zayıf konuların burada '
+                    'somutlaşır.',
                     style: textTheme.bodySmall?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 18),
+                  FilledButton.tonalIcon(
+                    onPressed: canAdd
+                        ? () async {
+                            // Soru ekleme bottom sheet'ini açan utility
+                            // import edemediği için bu ekranda zaten "+"
+                            // butonu mevcut (alt FAB); ipucu olarak göster.
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                    'Sağ alttaki + butonuna basarak başla'),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          }
+                        : null,
+                    icon: const Icon(Icons.add_chart_rounded),
+                    label: const Text('Hemen başla'),
                   ),
                 ],
               ),
@@ -142,17 +165,21 @@ class QuestionLogView extends ConsumerWidget {
             ...logs.map((log) => _LogTile(log: log)),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          if (canAdd) {
-            _AddLogSheet.show(context, examType: _filter(profile.examType));
-          } else {
-            showPaywall(context,
-                feature: PremiumFeature.unlimitedQuestionLog);
-          }
-        },
-        icon: Icon(canAdd ? Icons.add : Icons.lock_outline),
-        label: Text(canAdd ? 'Soru Ekle' : 'Puhu+ ile Sınırsız'),
+      floatingActionButton: Transform.translate(
+        offset: Offset(0, -(96 + MediaQuery.of(context).padding.bottom)),
+        child: FloatingActionButton.extended(
+          shape: const StadiumBorder(),
+          onPressed: () {
+            if (canAdd) {
+              _AddLogSheet.show(context, examType: _filter(profile.examType));
+            } else {
+              showPaywall(context,
+                  feature: PremiumFeature.unlimitedQuestionLog);
+            }
+          },
+          icon: Icon(canAdd ? Icons.add : Icons.lock_outline),
+          label: Text(canAdd ? 'Soru Ekle' : 'Puhu+ ile Sınırsız'),
+        ),
       ),
     );
   }

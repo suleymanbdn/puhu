@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 
-import '../../../core/theme/theme_provider.dart';
 import '../../tasks/models/task_model.dart';
 import '../../tasks/providers/task_provider.dart';
 import '../../tasks/widgets/task_card.dart';
@@ -39,20 +38,6 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
       appBar: AppBar(
         title: const Text('Takvim'),
         actions: [
-          // Tema değiştirme butonu
-          IconButton(
-            icon: Icon(
-              ref.watch(themeModeNotifierProvider) == ThemeMode.dark
-                  ? Icons.light_mode
-                  : Icons.dark_mode,
-            ),
-            tooltip: ref.watch(themeModeNotifierProvider) == ThemeMode.dark
-                ? 'Aydınlık Mod'
-                : 'Karanlık Mod',
-            onPressed: () {
-              ref.read(themeModeNotifierProvider.notifier).toggleTheme();
-            },
-          ),
           // Format değiştirme butonu
           IconButton(
             icon: Icon(

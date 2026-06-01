@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/services/feature_gate.dart';
 import '../../../core/services/purchase_service.dart';
-import '../../../core/theme/theme_provider.dart';
 import '../../exam/models/exam_profile.dart';
 import '../../exam/providers/exam_profile_provider.dart';
 import '../../mocks/providers/mock_exam_provider.dart';
@@ -54,23 +53,10 @@ class StatsView extends ConsumerWidget {
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Analiz'),
-        actions: [
-          IconButton(
-            icon: Icon(
-              ref.watch(themeModeNotifierProvider) == ThemeMode.dark
-                  ? Icons.light_mode
-                  : Icons.dark_mode,
-            ),
-            tooltip: ref.watch(themeModeNotifierProvider) == ThemeMode.dark
-                ? 'Aydınlık Mod'
-                : 'Karanlık Mod',
-            onPressed: () =>
-                ref.read(themeModeNotifierProvider.notifier).toggleTheme(),
-          ),
-        ],
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 124),
+        padding: EdgeInsets.fromLTRB(
+            16, 8, 16, 140 + MediaQuery.of(context).padding.bottom),
         children: [
           // Sınava kalan + bugün
           Container(

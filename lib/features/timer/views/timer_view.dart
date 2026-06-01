@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/theme/theme_provider.dart';
-
 import '../providers/focus_provider.dart';
 import '../widgets/focus_completion_dialog.dart';
 
@@ -78,17 +76,6 @@ class _TimerViewState extends ConsumerState<TimerView>
       appBar: AppBar(
         title: const Text('Odak'),
         actions: [
-          // Tema
-          IconButton(
-            icon: Icon(
-              ref.watch(themeModeNotifierProvider) == ThemeMode.dark
-                  ? Icons.light_mode_rounded
-                  : Icons.dark_mode_rounded,
-              size: 20,
-            ),
-            onPressed: () =>
-                ref.read(themeModeNotifierProvider.notifier).toggleTheme(),
-          ),
           // Bugünün özeti
           if (todayStats['minutes'] as int > 0)
             Container(

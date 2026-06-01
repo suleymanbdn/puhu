@@ -2,7 +2,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/theme/theme_provider.dart';
 import '../../../shared/widgets/empty_state_widget.dart';
 import '../../../shared/widgets/loading_widget.dart';
 import '../../../shared/widgets/glass_container.dart';
@@ -99,8 +98,6 @@ class _SliverGreetingHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final themeMode = ref.watch(themeModeNotifierProvider);
-
     final textTheme = Theme.of(context).textTheme;
 
     final quotes = [
@@ -132,19 +129,6 @@ class _SliverGreetingHeader extends ConsumerWidget {
           ),
         ),
       ),
-      actions: [
-        IconButton(
-          icon: Icon(
-            themeMode == ThemeMode.dark
-                ? Icons.light_mode_rounded
-                : Icons.dark_mode_rounded,
-          ),
-          onPressed: () =>
-              ref.read(themeModeNotifierProvider.notifier).toggleTheme(),
-        ),
-
-        const SizedBox(width: 8),
-      ],
     );
   }
 }

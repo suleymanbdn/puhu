@@ -7,6 +7,7 @@ import '../../../core/services/feature_gate.dart';
 import '../../../core/services/notification_service.dart';
 import '../../../core/services/purchase_service.dart';
 import '../../../core/services/settings_provider.dart';
+import '../../../core/theme/theme_provider.dart';
 import '../../../shared/widgets/app_background.dart';
 import '../../../shared/widgets/glass_container.dart';
 import '../../exam/providers/exam_profile_provider.dart';
@@ -208,6 +209,21 @@ class SettingsView extends ConsumerWidget {
             onChanged: (val) => notifier.setLongBreakDuration(val.round()),
             min: 5,
             max: 60,
+          ),
+
+          const SizedBox(height: 24),
+          // ============= GÖRÜNÜM =============
+          const _SectionTitle(title: 'Görünüm'),
+          GlassContainer(
+            padding: const EdgeInsets.all(12),
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(14),
+            child: _ThemeSelector(
+              current: ref.watch(themeModeNotifierProvider),
+              onChanged: (mode) => ref
+                  .read(themeModeNotifierProvider.notifier)
+                  .setThemeMode(mode),
+            ),
           ),
 
           const SizedBox(height: 24),
@@ -570,6 +586,80 @@ class _DurationTile extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Tema seçici — 3 segmentli (Sistem / Aydınlık / Karanlık).
+class _ThemeSelector extends StatelessWidget {
+  const _ThemeSelector({
+    required this.current,
+    required this.onChanged,
+  });
+
+  final ThemeMode current;
+  final ValueChanged<ThemeMode> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    final options = <(ThemeMode, IconData, String)>[
+      (ThemeMode.system, Icons.brightness_auto_outlined, 'Sistem'),
+      (ThemeMode.light, Icons.light_mode_outlined, 'Aydınlık'),
+      (ThemeMode.dark, Icons.dark_mode_outlined, 'Karanlık'),
+    ];
+
+    return Row(
+      children: options.map((opt) {
+        final (mode, icon, label) = opt;
+        final selected = current == mode;
+        return Expanded(
+          child: GestureDetector(
+            onTap: () => onChanged(mode),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 160),
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: selected
+                    ? colorScheme.primaryContainer
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: selected
+                      ? colorScheme.primary
+                      : colorScheme.outlineVariant.withAlpha(60),
+                  width: selected ? 1.5 : 1,
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    icon,
+                    size: 22,
+                    color: selected
+                        ? colorScheme.primary
+                        : colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    label,
+                    style: textTheme.labelSmall?.copyWith(
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                      color: selected
+                          ? colorScheme.primary
+                          : colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 }
