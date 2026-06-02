@@ -100,6 +100,7 @@ class _OnboardingViewState extends ConsumerState<OnboardingView> {
       await NotificationService.instance.scheduleExamReminders(_examDate);
       await NotificationService.instance.scheduleDailyReminder();
       await NotificationService.instance.scheduleStreakBreakReminder();
+      await NotificationService.instance.scheduleMistakeReviewReminder();
 
       if (mounted) {
         context.go('/home');

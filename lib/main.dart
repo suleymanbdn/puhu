@@ -54,6 +54,14 @@ void main() async {
     } catch (_) {}
   }
 
+  // v1.1.7 migration: Hata Sepeti günlük tekrar uyarısı.
+  if (!(prefs.getBool('mistake_review_scheduled_v1') ?? false)) {
+    try {
+      await NotificationService.instance.scheduleMistakeReviewReminder();
+      await prefs.setBool('mistake_review_scheduled_v1', true);
+    } catch (_) {}
+  }
+
   // Uygulamayı çalıştır
   runApp(
     ProviderScope(

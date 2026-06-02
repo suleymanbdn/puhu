@@ -236,6 +236,46 @@ class NotificationService {
     await _plugin.cancel(id: 600);
   }
 
+  /// Hata Sepeti günlük tekrar uyarısı — varsayılan 18:00. Mesaj her gün
+  /// aynı; sepette bekleyen yoksa kullanıcı bildirimi gör-ardımcı kapatır,
+  /// var ise tekrar oturumuna girer.
+  Future<void> scheduleMistakeReviewReminder({
+    int hour = 18,
+    int minute = 0,
+  }) async {
+    await _plugin.cancel(id: 700);
+
+    final now = DateTime.now();
+    var first = DateTime(now.year, now.month, now.day, hour, minute);
+    if (first.isBefore(now)) {
+      first = first.add(const Duration(days: 1));
+    }
+
+    await _plugin.zonedSchedule(
+      id: 700,
+      title: 'Hata Sepeti 📓',
+      body: 'Bekleyen hatalarına bir göz at — 10 dakika yeter.',
+      scheduledDate: tz.TZDateTime.from(first, tz.local),
+      notificationDetails: const NotificationDetails(
+        android: AndroidNotificationDetails(
+          _reviewChannel,
+          'Hata Tekrarı',
+          channelDescription:
+              'Hata sepetindeki bekleyen kayıtları gözden geçirme uyarısı',
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+        iOS: DarwinNotificationDetails(),
+      ),
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time, // her gün aynı saat
+    );
+  }
+
+  Future<void> cancelMistakeReviewReminder() async {
+    await _plugin.cancel(id: 700);
+  }
+
   Future<void> cancelAll() async {
     await _plugin.cancelAll();
   }

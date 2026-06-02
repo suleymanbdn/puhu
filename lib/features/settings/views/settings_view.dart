@@ -283,6 +283,8 @@ class SettingsView extends ConsumerWidget {
                           .scheduleDailyReminder();
                       await NotificationService.instance
                           .scheduleStreakBreakReminder();
+                      await NotificationService.instance
+                          .scheduleMistakeReviewReminder();
                     }
                   },
                   activeThumbColor: colorScheme.primary,
@@ -296,6 +298,34 @@ class SettingsView extends ConsumerWidget {
           const SizedBox(height: 24),
           // ============= EKSTRA =============
           const _SectionTitle(title: 'Diğer'),
+          ListTile(
+            leading: const Icon(Icons.auto_awesome_rounded,
+                color: AppColors.focus),
+            title: const Text('Kişisel Koç'),
+            subtitle:
+                const Text('Bugün önerisi, haftalık plan, ders skorları'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/coach'),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            tileColor: colorScheme.surface,
+          ),
+          const SizedBox(height: 8),
+          ListTile(
+            leading: const Icon(Icons.bookmark_outline_rounded,
+                color: AppColors.danger),
+            title: const Text('Hata Sepeti'),
+            subtitle: const Text(
+                'Yanlışlarını sepete at, aralıklı tekrar et'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/mistakes'),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            tileColor: colorScheme.surface,
+          ),
+          const SizedBox(height: 8),
           ListTile(
             leading: const Icon(Icons.calendar_month_outlined),
             title: const Text('Takvim'),

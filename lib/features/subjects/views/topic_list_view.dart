@@ -3,6 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import 'package:go_router/go_router.dart';
+
+import '../../../core/theme/app_colors.dart';
+import '../../coach/providers/ai_provider.dart';
+import '../../mistakes/views/add_mistake_sheet.dart';
 import '../models/subject.dart';
 import '../models/topic.dart';
 import '../providers/topic_provider.dart';
@@ -263,12 +268,48 @@ class _TopicTile extends ConsumerWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
+                  subject.title,
+                  style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                      ),
+                ),
+                const SizedBox(height: 14),
+                // Hızlı eylemler
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.auto_awesome_rounded, size: 18),
+                        label: const Text('AI Özet'),
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          _showAiSummary(context, ref);
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.bookmark_add_outlined, size: 18),
+                        label: const Text('Hataya at'),
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          showAddMistakeSheet(context, prefilled: subject);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Divider(color: Theme.of(ctx).colorScheme.outlineVariant),
+                const SizedBox(height: 12),
+                Text(
                   'Durumu güncelle',
                   style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
                         color: Theme.of(ctx).colorScheme.onSurfaceVariant,
                       ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
                 ...TopicStatus.values.map((s) {
                   final isSelected = s == topic.status;
                   return ListTile(
@@ -296,6 +337,233 @@ class _TopicTile extends ConsumerWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  /// AI ile konu özetini gösteren modal.
+  ///
+  /// Eğer AI yapılandırılmadıysa Settings'e yönlendiren promo gösterir.
+  /// Yapılandırılmışsa loading → cache veya canlı çağrı → metin.
+  void _showAiSummary(BuildContext context, WidgetRef ref) {
+    HapticFeedback.lightImpact();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => _AiTopicSummarySheet(
+        subjectTitle: subject.title,
+        topicName: topic.name,
+      ),
+    );
+  }
+}
+
+/// AI konu özeti bottom sheet.
+class _AiTopicSummarySheet extends ConsumerStatefulWidget {
+  const _AiTopicSummarySheet({
+    required this.subjectTitle,
+    required this.topicName,
+  });
+  final String subjectTitle;
+  final String topicName;
+
+  @override
+  ConsumerState<_AiTopicSummarySheet> createState() =>
+      _AiTopicSummarySheetState();
+}
+
+class _AiTopicSummarySheetState
+    extends ConsumerState<_AiTopicSummarySheet> {
+  String? _summary;
+  bool _loading = false;
+  String? _error;
+  bool _started = false;
+
+  Future<void> _load() async {
+    setState(() {
+      _started = true;
+      _loading = true;
+      _error = null;
+    });
+    final summarizer = ref.read(aiSummarizerProvider);
+    final result = await summarizer.summarizeTopic(
+      subjectTitle: widget.subjectTitle,
+      topicName: widget.topicName,
+    );
+    if (!mounted) return;
+    setState(() {
+      _loading = false;
+      _summary = result;
+      if (result == null) {
+        _error = 'Özet üretilemedi — key geçerli mi, internet var mı?';
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final summarizer = ref.watch(aiSummarizerProvider);
+    final isAvailable = summarizer.isAvailable;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: colorScheme.onSurfaceVariant.withAlpha(60),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          Row(
+            children: [
+              const Icon(Icons.auto_awesome_rounded,
+                  color: AppColors.focus, size: 22),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.topicName,
+                      style: textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w800),
+                    ),
+                    Text(
+                      '${widget.subjectTitle} • AI özeti',
+                      style: textTheme.labelSmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (!isAvailable) ...[
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.subtleOf(AppColors.focus),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'AI yapılandırılmadı',
+                    style: textTheme.titleSmall
+                        ?.copyWith(fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Kendi ücretsiz Gemini key\'ini Ayarlar\'dan bağlarsan '
+                    'konunun kısa AI özetini burada görürsün. Key 30 gün '
+                    'cihazda cache\'lenir, ek istek yapmaz.',
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.tonalIcon(
+                icon: const Icon(Icons.settings_outlined),
+                label: const Text('Ayarlardan bağla'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  GoRouter.of(context).push('/settings');
+                },
+              ),
+            ),
+          ] else if (!_started) ...[
+            Text(
+              'Bu konuyu kısaca özetleyip 3 madde formül/kavram istersen '
+              'aşağıdaki butona bas. Aynı konu için 30 gün cache\'lenir.',
+              style: textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                icon: const Icon(Icons.auto_awesome_rounded),
+                label: const Text('Özeti üret'),
+                onPressed: _load,
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.focus,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+              ),
+            ),
+          ] else if (_loading) ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                  child:
+                      CircularProgressIndicator(strokeWidth: 2.5)),
+            ),
+          ] else if (_summary != null) ...[
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.subtleOf(AppColors.focus),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                _summary!,
+                style: textTheme.bodyMedium?.copyWith(height: 1.45),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${summarizer.providerName} ile üretildi · 30 gün cache.',
+              style: textTheme.labelSmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ] else if (_error != null) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.subtleOf(AppColors.danger),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                _error!,
+                style: textTheme.bodySmall
+                    ?.copyWith(color: AppColors.danger),
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Tekrar dene'),
+                onPressed: _load,
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
