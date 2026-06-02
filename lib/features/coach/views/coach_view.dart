@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../subjects/models/subject.dart';
 import '../models/study_plan.dart';
+import '../providers/ai_provider.dart';
 import '../providers/coach_provider.dart';
 
 const _weekdayShort = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
@@ -125,31 +126,218 @@ class CoachView extends ConsumerWidget {
                 ),
           ],
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
 
-          // Şeffaflık notu
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: AppColors.subtleOf(colorScheme.primary),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Row(
+          // === AI Koç Notu — opsiyonel (BYOK gerekli) ===
+          _AiCoachNoteSection(report: report, subjectFor: _subjectFromId),
+        ],
+      ),
+    );
+  }
+}
+
+/// AI tarafından üretilen koç notu kartı. Key yoksa "Settings'ten bağla"
+/// promo gösterir; key varsa "Üret" butonu + sonuç metni.
+class _AiCoachNoteSection extends ConsumerStatefulWidget {
+  const _AiCoachNoteSection({required this.report, required this.subjectFor});
+  final CoachReport report;
+  final Subject? Function(String) subjectFor;
+
+  @override
+  ConsumerState<_AiCoachNoteSection> createState() =>
+      _AiCoachNoteSectionState();
+}
+
+class _AiCoachNoteSectionState extends ConsumerState<_AiCoachNoteSection> {
+  String? _note;
+  bool _loading = false;
+  String? _error;
+
+  String _buildContext() {
+    final weakest = widget.report.weakestSubjectIds
+        .map((id) => widget.subjectFor(id)?.title ?? id)
+        .join(', ');
+    final strongest = widget.report.strongestSubjectIds
+        .map((id) => widget.subjectFor(id)?.title ?? id)
+        .join(', ');
+    final today = widget.report.todayRecommendation;
+    return '''
+En zayıf 3 ders: $weakest.
+En güçlü 3 ders: $strongest.
+Bugünkü öneri: ${today.title}.
+Bugün üretilecek mesaj: kullanıcıya bu durumu özetleyen, motive edici,
+samimi 2-3 cümle.
+''';
+  }
+
+  Future<void> _generate() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    final summarizer = ref.read(aiSummarizerProvider);
+    final result = await summarizer.generateCoachNote(_buildContext());
+    if (!mounted) return;
+    setState(() {
+      _loading = false;
+      _note = result;
+      if (result == null) {
+        _error = 'Üretim başarısız — key geçerli mi, internet var mı?';
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final summarizer = ref.watch(aiSummarizerProvider);
+    final isAvailable = summarizer.isAvailable;
+
+    if (!isAvailable) {
+      // Promo: key yoksa
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.subtleOf(AppColors.focus),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.softOf(AppColors.focus)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Icon(Icons.info_outline,
-                    color: colorScheme.primary, size: 18),
+                const Icon(Icons.auto_awesome_rounded,
+                    color: AppColors.focus, size: 22),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Koç şu an %100 algoritmik — verilerinden anında '
-                    'hesaplar, internet gerektirmez. AI özet ve doğal '
-                    'dil koçluğu yakında.',
-                    style: textTheme.bodySmall?.copyWith(
-                      color: colorScheme.primary,
+                    'AI koç notu (ücretsiz)',
+                    style: textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.focus,
                     ),
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Kendi ücretsiz Gemini key\'ini Ayarlar > Yapay Zeka\'dan '
+              'bağlarsan, koç bugünkü durumun için kişisel bir not üretir. '
+              'Key cihazında kalır.',
+              style: textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.tonalIcon(
+                icon: const Icon(Icons.settings_outlined),
+                label: const Text('Ayarlardan bağla'),
+                onPressed: () =>
+                    GoRouter.of(context).push('/settings'),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Key var
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.softOf(AppColors.focus)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.auto_awesome_rounded,
+                  color: AppColors.focus, size: 22),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'AI Koç Notu',
+                  style: textTheme.titleSmall
+                      ?.copyWith(fontWeight: FontWeight.w800),
+                ),
+              ),
+              Text(
+                summarizer.providerName,
+                style: textTheme.labelSmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (_loading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Center(
+                  child:
+                      CircularProgressIndicator(strokeWidth: 2.5)),
+            )
+          else if (_note != null)
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.subtleOf(AppColors.focus),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                _note!,
+                style: textTheme.bodyMedium?.copyWith(height: 1.4),
+              ),
+            )
+          else if (_error != null)
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.subtleOf(AppColors.danger),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                _error!,
+                style: textTheme.bodySmall?.copyWith(
+                  color: AppColors.danger,
+                ),
+              ),
+            )
+          else
+            Text(
+              'Bugünün durumu için sana özel bir motivasyon notu üret.',
+              style: textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              icon: Icon(_note == null
+                  ? Icons.auto_awesome_rounded
+                  : Icons.refresh_rounded),
+              label: Text(_note == null ? 'Not üret' : 'Yeniden üret'),
+              onPressed: _loading ? null : _generate,
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.focus,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Cevap 24 saat cihazında cache\'lenir — gereksiz çağrı yapmaz.',
+            style: textTheme.labelSmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
         ],

@@ -2,14 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/services/feature_gate.dart';
 import '../../../core/services/notification_service.dart';
 import '../../../core/services/purchase_service.dart';
 import '../../../core/services/settings_provider.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/theme_provider.dart';
 import '../../../shared/widgets/app_background.dart';
 import '../../../shared/widgets/glass_container.dart';
+import '../../coach/providers/ai_provider.dart';
 import '../../exam/providers/exam_profile_provider.dart';
 
 class SettingsView extends ConsumerWidget {
@@ -209,6 +212,16 @@ class SettingsView extends ConsumerWidget {
             onChanged: (val) => notifier.setLongBreakDuration(val.round()),
             min: 5,
             max: 60,
+          ),
+
+          const SizedBox(height: 24),
+          // ============= YAPAY ZEKA (BYOK) =============
+          const _SectionTitle(title: 'Yapay Zeka Koçluğu'),
+          GlassContainer(
+            padding: const EdgeInsets.all(16),
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(14),
+            child: const _GeminiKeySection(),
           ),
 
           const SizedBox(height: 24),
@@ -663,5 +676,212 @@ class _ThemeSelector extends StatelessWidget {
         );
       }).toList(),
     );
+  }
+}
+
+/// Gemini API key (BYOK) bölümü — kullanıcı ücretsiz key'ini yapıştırır.
+///
+/// Gizlilik notu: key sadece kullanıcının cihazında SharedPreferences'ta
+/// saklanır; Puhu sunucusu yok, anahtar başkasıyla paylaşılmaz.
+class _GeminiKeySection extends ConsumerStatefulWidget {
+  const _GeminiKeySection();
+
+  @override
+  ConsumerState<_GeminiKeySection> createState() => _GeminiKeySectionState();
+}
+
+class _GeminiKeySectionState extends ConsumerState<_GeminiKeySection> {
+  late final TextEditingController _ctl;
+  bool _obscured = true;
+  bool _editing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctl = TextEditingController(text: ref.read(geminiApiKeyProvider));
+  }
+
+  @override
+  void dispose() {
+    _ctl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    await ref.read(geminiApiKeyProvider.notifier).setKey(_ctl.text);
+    setState(() => _editing = false);
+  }
+
+  Future<void> _clear() async {
+    _ctl.text = '';
+    await ref.read(geminiApiKeyProvider.notifier).setKey('');
+    setState(() => _editing = false);
+  }
+
+  String _maskKey(String key) {
+    if (key.isEmpty) return '';
+    if (key.length <= 8) return '${'•' * (key.length - 4)}${key.substring(key.length - 4)}';
+    return '${'•' * 8}${key.substring(key.length - 4)}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final stored = ref.watch(geminiApiKeyProvider);
+    final hasKey = stored.isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.auto_awesome_rounded,
+                color: AppColors.focus, size: 22),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Gemini ücretsiz katmanı (BYOK)',
+                style: textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w700),
+              ),
+            ),
+            if (hasKey && !_editing)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.subtleOf(AppColors.success),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'AKTİF',
+                  style: textTheme.labelSmall?.copyWith(
+                    color: AppColors.success,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Text(
+          'Kendi ücretsiz Gemini key\'ini bağlarsan koç notu ve konu özeti '
+          'üretebilir. Key sadece cihazında saklanır.',
+          style: textTheme.bodySmall?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 6),
+        InkWell(
+          onTap: () async {
+            final url = Uri.parse('https://aistudio.google.com/app/apikey');
+            await launchUrlIfPossible(url);
+          },
+          child: Row(
+            children: [
+              Icon(Icons.open_in_new_rounded,
+                  size: 14, color: colorScheme.primary),
+              const SizedBox(width: 4),
+              Text(
+                'Ücretsiz key al → aistudio.google.com',
+                style: textTheme.labelSmall?.copyWith(
+                  color: colorScheme.primary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        if (hasKey && !_editing) ...[
+          // Mevcut key'i göster (maskelenmiş) + düzenle/sil
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.key_rounded,
+                    size: 18, color: colorScheme.onSurfaceVariant),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _maskKey(stored),
+                    style: textTheme.bodyMedium?.copyWith(
+                      fontFamily: 'monospace',
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => setState(() => _editing = true),
+                  child: const Text('Değiştir'),
+                ),
+                TextButton(
+                  onPressed: _clear,
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.danger,
+                  ),
+                  child: const Text('Kaldır'),
+                ),
+              ],
+            ),
+          ),
+        ] else ...[
+          TextField(
+            controller: _ctl,
+            obscureText: _obscured,
+            decoration: InputDecoration(
+              hintText: 'AIza... ile başlayan Gemini key',
+              prefixIcon: const Icon(Icons.key_outlined),
+              suffixIcon: IconButton(
+                icon: Icon(_obscured
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined),
+                onPressed: () => setState(() => _obscured = !_obscured),
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.icon(
+                  icon: const Icon(Icons.check_rounded),
+                  label: const Text('Kaydet'),
+                  onPressed: _ctl.text.trim().isEmpty ? null : _save,
+                ),
+              ),
+              if (_editing) ...[
+                const SizedBox(width: 8),
+                OutlinedButton(
+                  onPressed: () {
+                    setState(() {
+                      _editing = false;
+                      _ctl.text = stored;
+                    });
+                  },
+                  child: const Text('İptal'),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+Future<void> launchUrlIfPossible(Uri url) async {
+  if (await canLaunchUrl(url)) {
+    await launchUrl(url, mode: LaunchMode.externalApplication);
   }
 }
