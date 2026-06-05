@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/services/feature_gate.dart';
 import '../../../core/services/purchase_service.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../exam/models/exam_profile.dart';
 import '../../exam/providers/exam_profile_provider.dart';
 import '../../mocks/providers/mock_exam_provider.dart';
@@ -155,6 +156,18 @@ class StatsView extends ConsumerWidget {
             ],
           ),
 
+          const SizedBox(height: 24),
+
+          // Bu hafta vs geçen hafta karşılaştırma
+          const _WeekComparisonCard(),
+          const SizedBox(height: 16),
+
+          // Son 7 gün bar chart
+          const _Last7DaysBarCard(),
+          const SizedBox(height: 16),
+
+          // Çalışma heatmap'i (son 12 hafta)
+          const _StudyHeatmapCard(),
           const SizedBox(height: 24),
 
           // Net gelişim grafiği (varsa)
@@ -578,6 +591,441 @@ class _WeakTopicsCard extends StatelessWidget {
                 ),
               );
             }),
+        ],
+      ),
+    );
+  }
+}
+
+// ============================================================================
+// YENİ: Bu Hafta vs Geçen Hafta Karşılaştırma
+// ============================================================================
+
+class _WeekComparisonCard extends ConsumerWidget {
+  const _WeekComparisonCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final sessions = ref.watch(focusHistoryProvider);
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    // Haftanın başı (Pazartesi)
+    final thisWeekStart = today.subtract(Duration(days: now.weekday - 1));
+    final lastWeekStart = thisWeekStart.subtract(const Duration(days: 7));
+    final lastWeekEnd = thisWeekStart;
+
+    int thisWeekMin = 0;
+    int lastWeekMin = 0;
+    for (final s in sessions) {
+      final d = DateTime(s.startTime.year, s.startTime.month, s.startTime.day);
+      if (!d.isBefore(thisWeekStart)) {
+        thisWeekMin += s.actualMinutes;
+      } else if (!d.isBefore(lastWeekStart) && d.isBefore(lastWeekEnd)) {
+        lastWeekMin += s.actualMinutes;
+      }
+    }
+
+    final delta = thisWeekMin - lastWeekMin;
+    final pct = lastWeekMin == 0
+        ? null
+        : ((delta / lastWeekMin) * 100).round();
+    final isUp = delta >= 0;
+    final accent = isUp ? AppColors.success : AppColors.danger;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.compare_arrows_rounded,
+                  size: 18, color: colorScheme.onSurfaceVariant),
+              const SizedBox(width: 6),
+              Text('Bu Hafta vs Geçen Hafta',
+                  style: textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.bold)),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Bu hafta',
+                        style: textTheme.labelSmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        )),
+                    const SizedBox(height: 2),
+                    Text(_formatMinutes(thisWeekMin),
+                        style: textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: colorScheme.primary,
+                        )),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Geçen hafta',
+                        style: textTheme.labelSmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        )),
+                    const SizedBox(height: 2),
+                    Text(_formatMinutes(lastWeekMin),
+                        style: textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: colorScheme.onSurfaceVariant,
+                        )),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.subtleOf(accent),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  isUp ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+                  size: 18,
+                  color: accent,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _buildDeltaText(delta, pct, isUp),
+                    style: textTheme.bodySmall?.copyWith(
+                      color: accent,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _buildDeltaText(int delta, int? pct, bool isUp) {
+    final absDelta = delta.abs();
+    final hr = absDelta ~/ 60;
+    final mn = absDelta % 60;
+    final time = hr > 0 ? '${hr}sa ${mn}dk' : '${mn}dk';
+    if (pct == null) {
+      return isUp
+          ? 'İlk haftan! $time çalıştın 🚀'
+          : 'Bu hafta hiç çalışma yok';
+    }
+    return isUp
+        ? '$time daha fazla (+%${pct.abs()})'
+        : '$time daha az (-%${pct.abs()})';
+  }
+
+  String _formatMinutes(int m) {
+    if (m < 60) return '${m}dk';
+    final h = m ~/ 60;
+    final r = m % 60;
+    return r == 0 ? '${h}sa' : '${h}sa ${r}dk';
+  }
+}
+
+// ============================================================================
+// YENİ: Son 7 Gün Bar Chart
+// ============================================================================
+
+class _Last7DaysBarCard extends ConsumerWidget {
+  const _Last7DaysBarCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final sessions = ref.watch(focusHistoryProvider);
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    // i = 0 (6 gün önce) ... 6 (bugün)
+    final minutesByDay = List<int>.filled(7, 0);
+    for (final s in sessions) {
+      final d = DateTime(s.startTime.year, s.startTime.month, s.startTime.day);
+      final diff = today.difference(d).inDays;
+      if (diff >= 0 && diff < 7) {
+        minutesByDay[6 - diff] += s.actualMinutes;
+      }
+    }
+
+    final maxMin = minutesByDay.fold<int>(0, (a, b) => a > b ? a : b);
+    final yMax = maxMin == 0 ? 60.0 : (maxMin * 1.25).ceilToDouble();
+
+    final labels = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
+    // Bugünden geriye 6 gün: bugünün haftagünü bilinmiyor, hesapla
+    final dayLabels = <String>[];
+    for (var i = 6; i >= 0; i--) {
+      final d = today.subtract(Duration(days: i));
+      dayLabels.add(labels[d.weekday - 1]);
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.bar_chart_rounded,
+                  size: 18, color: colorScheme.onSurfaceVariant),
+              const SizedBox(width: 6),
+              Text('Son 7 Gün',
+                  style: textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.bold)),
+              const Spacer(),
+              Text(
+                'dk',
+                style: textTheme.labelSmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          AspectRatio(
+            aspectRatio: 1.8,
+            child: BarChart(
+              BarChartData(
+                maxY: yMax,
+                minY: 0,
+                gridData: const FlGridData(show: false),
+                borderData: FlBorderData(show: false),
+                titlesData: FlTitlesData(
+                  show: true,
+                  topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
+                  leftTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 22,
+                      getTitlesWidget: (value, meta) {
+                        final i = value.toInt();
+                        if (i < 0 || i >= dayLabels.length) {
+                          return const SizedBox.shrink();
+                        }
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Text(
+                            dayLabels[i],
+                            style: textTheme.labelSmall?.copyWith(
+                              color: i == 6
+                                  ? colorScheme.primary
+                                  : colorScheme.onSurfaceVariant,
+                              fontWeight: i == 6
+                                  ? FontWeight.w700
+                                  : FontWeight.normal,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                barGroups: [
+                  for (var i = 0; i < 7; i++)
+                    BarChartGroupData(
+                      x: i,
+                      barRods: [
+                        BarChartRodData(
+                          toY: minutesByDay[i].toDouble(),
+                          color: i == 6
+                              ? colorScheme.primary
+                              : colorScheme.primary.withValues(alpha: 0.45),
+                          width: 18,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ============================================================================
+// YENİ: GitHub-tarzı Çalışma Heatmap (Son 12 hafta)
+// ============================================================================
+
+class _StudyHeatmapCard extends ConsumerWidget {
+  const _StudyHeatmapCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final sessions = ref.watch(focusHistoryProvider);
+
+    const weeks = 12;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    // Bugünün haftası: Pazar gününe kadar olan günleri grid'de doldurmak için
+    // bu haftanın pazartesisi
+    final thisWeekMonday = today.subtract(Duration(days: now.weekday - 1));
+    final start = thisWeekMonday.subtract(const Duration(days: 7 * (weeks - 1)));
+
+    // Günlük dakika haritası
+    final byDay = <DateTime, int>{};
+    for (final s in sessions) {
+      final d = DateTime(s.startTime.year, s.startTime.month, s.startTime.day);
+      if (d.isBefore(start)) continue;
+      byDay[d] = (byDay[d] ?? 0) + s.actualMinutes;
+    }
+
+    // Renk eşikleri: 0, 1-15, 16-45, 46-90, 90+
+    Color cellColor(int minutes) {
+      if (minutes == 0) return colorScheme.onSurface.withValues(alpha: 0.06);
+      if (minutes < 16) return colorScheme.primary.withValues(alpha: 0.22);
+      if (minutes < 46) return colorScheme.primary.withValues(alpha: 0.45);
+      if (minutes < 91) return colorScheme.primary.withValues(alpha: 0.72);
+      return colorScheme.primary;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.grid_view_rounded,
+                  size: 18, color: colorScheme.onSurfaceVariant),
+              const SizedBox(width: 6),
+              Text('Çalışma Haritası',
+                  style: textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.bold)),
+              const Spacer(),
+              Text(
+                'Son 12 hafta',
+                style: textTheme.labelSmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          LayoutBuilder(
+            builder: (ctx, constraints) {
+              const cellGap = 4.0;
+              final totalW = constraints.maxWidth;
+              final cell = ((totalW - cellGap * (weeks - 1)) / weeks)
+                  .floorToDouble()
+                  .clamp(8.0, 22.0);
+              final gridW = cell * weeks + cellGap * (weeks - 1);
+
+              return Center(
+                child: SizedBox(
+                  width: gridW,
+                  child: Column(
+                    children: [
+                      // 7 satır (Pzt-Paz)
+                      for (var row = 0; row < 7; row++)
+                        Padding(
+                          padding: EdgeInsets.only(
+                              bottom: row == 6 ? 0 : cellGap),
+                          child: Row(
+                            children: [
+                              for (var col = 0; col < weeks; col++) ...[
+                                Builder(builder: (_) {
+                                  final date = start
+                                      .add(Duration(days: col * 7 + row));
+                                  final isFuture = date.isAfter(today);
+                                  final minutes = byDay[date] ?? 0;
+                                  return Container(
+                                    width: cell,
+                                    height: cell,
+                                    decoration: BoxDecoration(
+                                      color: isFuture
+                                          ? Colors.transparent
+                                          : cellColor(minutes),
+                                      borderRadius: BorderRadius.circular(3),
+                                    ),
+                                  );
+                                }),
+                                if (col < weeks - 1)
+                                  const SizedBox(width: cellGap),
+                              ],
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Text('Az',
+                  style: textTheme.labelSmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  )),
+              const SizedBox(width: 6),
+              for (final v in [0.06, 0.22, 0.45, 0.72, 1.0])
+                Padding(
+                  padding: const EdgeInsets.only(left: 3),
+                  child: Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: v == 0.06
+                          ? colorScheme.onSurface.withValues(alpha: 0.06)
+                          : colorScheme.primary.withValues(alpha: v),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                ),
+              const SizedBox(width: 6),
+              Text('Çok',
+                  style: textTheme.labelSmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  )),
+            ],
+          ),
         ],
       ),
     );
