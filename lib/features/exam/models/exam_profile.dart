@@ -44,15 +44,15 @@ enum ExamType {
   String get description {
     switch (this) {
       case ExamType.tyt:
-        return 'Sadece Temel Yeterlilik Testi';
+        return 'Sadece TYT • 2 yıllık önlisans';
       case ExamType.sayisal:
-        return 'Mühendislik, Tıp, Fen';
+        return 'TYT + AYT • Mühendislik, Tıp, Fen';
       case ExamType.esitAgirlik:
-        return 'Hukuk, Psikoloji, İşletme';
+        return 'TYT + AYT • Hukuk, Psikoloji, İşletme';
       case ExamType.sozel:
-        return 'Edebiyat, Tarih, Sosyoloji';
+        return 'TYT + AYT • Edebiyat, Tarih, Sosyoloji';
       case ExamType.dil:
-        return 'İngilizce, Almanca, Fransızca';
+        return 'TYT + YDT • İngilizce, Almanca, Fransızca';
     }
   }
 

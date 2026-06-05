@@ -17,6 +17,7 @@ import '../../questions/providers/question_log_provider.dart';
 import '../../streak/providers/streak_freeze_provider.dart';
 import '../../streak/providers/streak_provider.dart';
 import '../../timer/providers/focus_provider.dart';
+import '../../whats_new/views/whats_new_sheet.dart';
 
 /// Anasayfa
 class DashboardView extends ConsumerWidget {
@@ -36,6 +37,12 @@ class DashboardView extends ConsumerWidget {
     final isPremium = ref.watch(isPremiumProvider);
 
     if (profile == null) return const SizedBox.shrink();
+
+    // İlk açılışta (versiyon değişmişse) "Bu sürümde yeni" sheet'ini göster.
+    // Idempotent: sheet kendi içinde lastSeenVersion kontrolü yapar.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (context.mounted) maybeShowWhatsNewSheet(context);
+    });
 
     final dailyTargetMin = (profile.dailyTargetHours * 60).round();
     final todayMin = today['minutes'] ?? 0;

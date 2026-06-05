@@ -128,6 +128,7 @@ class MockExamView extends ConsumerWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        shape: const StadiumBorder(),
         onPressed: () => _AddMockSheet.show(
           context,
           examType: profile.examType,

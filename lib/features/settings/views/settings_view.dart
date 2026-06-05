@@ -14,6 +14,7 @@ import '../../../shared/widgets/app_background.dart';
 import '../../../shared/widgets/glass_container.dart';
 import '../../coach/providers/ai_provider.dart';
 import '../../exam/providers/exam_profile_provider.dart';
+import '../../whats_new/views/whats_new_sheet.dart';
 
 class SettingsView extends ConsumerWidget {
   const SettingsView({super.key});
@@ -320,6 +321,19 @@ class SettingsView extends ConsumerWidget {
                 'Yanlışlarını sepete at, aralıklı tekrar et'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push('/mistakes'),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            tileColor: colorScheme.surface,
+          ),
+          const SizedBox(height: 8),
+          ListTile(
+            leading: const Icon(Icons.auto_awesome_motion_outlined,
+                color: AppColors.premium),
+            title: const Text('Bu Sürümde Yeni'),
+            subtitle: const Text('v1.1.x güncellemesinin tüm yenilikleri'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => showWhatsNewSheet(context),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
