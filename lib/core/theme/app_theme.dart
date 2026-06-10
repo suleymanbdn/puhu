@@ -93,11 +93,13 @@ class AppTheme {
       ),
       scaffoldBackgroundColor: _bgL,
       appBarTheme: AppBarTheme(
-        backgroundColor: _bgL,
+        // Transparent: gövde gradient'i (AppBackground) bar arkasından da
+        // aksın — düz blok renk temayla kopukluk yaratıyordu.
+        backgroundColor: Colors.transparent,
         foregroundColor: _onSurfaceL,
         elevation: 0,
         scrolledUnderElevation: 0,
-        centerTitle: false,
+        centerTitle: true,
         titleTextStyle: GoogleFonts.inter(
           fontSize: 20,
           fontWeight: FontWeight.w700,
@@ -244,11 +246,11 @@ class AppTheme {
       ),
       scaffoldBackgroundColor: _bgD,
       appBarTheme: AppBarTheme(
-        backgroundColor: _bgD,
+        backgroundColor: Colors.transparent,
         foregroundColor: _onSurfaceD,
         elevation: 0,
         scrolledUnderElevation: 0,
-        centerTitle: false,
+        centerTitle: true,
         titleTextStyle: GoogleFonts.inter(
           fontSize: 20,
           fontWeight: FontWeight.w700,
