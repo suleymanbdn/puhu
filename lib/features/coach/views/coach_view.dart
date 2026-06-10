@@ -193,6 +193,8 @@ samimi 2-3 cümle.
     final textTheme = Theme.of(context).textTheme;
     final summarizer = ref.watch(aiSummarizerProvider);
     final isAvailable = summarizer.isAvailable;
+    final remaining = ref.watch(aiRemainingTodayProvider);
+    final isBundledExhausted = isAvailable && remaining == 0;
 
     if (!isAvailable) {
       // Promo: key yoksa
@@ -269,11 +271,26 @@ samimi 2-3 cümle.
                       ?.copyWith(fontWeight: FontWeight.w800),
                 ),
               ),
-              Text(
-                summarizer.providerName,
-                style: textTheme.labelSmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    summarizer.providerName,
+                    style: textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  if (remaining >= 0)
+                    Text(
+                      'Bugün $remaining hak',
+                      style: textTheme.labelSmall?.copyWith(
+                        color: isBundledExhausted
+                            ? AppColors.danger
+                            : AppColors.focus,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                ],
               ),
             ],
           ),
@@ -325,8 +342,10 @@ samimi 2-3 cümle.
               icon: Icon(_note == null
                   ? Icons.auto_awesome_rounded
                   : Icons.refresh_rounded),
-              label: Text(_note == null ? 'Not üret' : 'Yeniden üret'),
-              onPressed: _loading ? null : _generate,
+              label: Text(isBundledExhausted
+                  ? 'Bugünkü hak doldu — yarın yeniden'
+                  : (_note == null ? 'Not üret' : 'Yeniden üret')),
+              onPressed: (_loading || isBundledExhausted) ? null : _generate,
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.focus,
                 padding: const EdgeInsets.symmetric(vertical: 14),
