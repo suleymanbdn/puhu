@@ -28,13 +28,15 @@ class SettingsView extends ConsumerWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        title: const Text('Ayarlar'),
-      ),
-      body: AppBackground(
-        child: ListView(
+    // AppBackground Scaffold'u SARAR — gradient AppBar arkasına da aksın
+    // (içeride sadece body'yi sarmak bar bölgesini siyah bırakıyordu).
+    return AppBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: const Text('Ayarlar'),
+        ),
+        body: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
           children: [
           // ============= BAYKUŞ+ =============
