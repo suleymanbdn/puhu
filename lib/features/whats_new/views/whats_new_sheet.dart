@@ -69,10 +69,11 @@ const _entry = WhatsNewEntry(
     ),
     WhatsNewItem(
       icon: Icons.psychology_alt_rounded,
-      title: 'AI Koç Notu (Gemini)',
-      description: 'Ücretsiz Gemini API key gir, AI ile günlük strateji '
-          'notu ve konu özeti al.',
+      title: 'Puhu AI — kurulumsuz',
+      description: 'Hiçbir ayar yapmadan AI koç notu ve konu özeti al — '
+          'günde 10 hak, tamamen ücretsiz.',
       color: AppColors.premium,
+      routeOnTap: '/coach',
     ),
     WhatsNewItem(
       icon: Icons.flash_on_rounded,

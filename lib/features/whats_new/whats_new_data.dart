@@ -33,4 +33,4 @@ class WhatsNewItem {
 
 /// Mevcut versiyonun "yeni" içeriği. Tek bir kayıt — App Store'a kadar
 /// biriken tüm sprint'ler (1.1.2 → 1.1.7) buradan tanıtılır.
-const String kCurrentWhatsNewVersion = '1.1.7';
+const String kCurrentWhatsNewVersion = '1.2.0';
