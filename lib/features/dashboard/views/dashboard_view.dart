@@ -12,7 +12,6 @@ import '../../coach/models/study_plan.dart';
 import '../../coach/providers/coach_provider.dart';
 import '../../exam/providers/exam_profile_provider.dart';
 import '../../mistakes/providers/mistake_provider.dart';
-import '../../mocks/providers/mock_exam_provider.dart';
 import '../../questions/providers/question_log_provider.dart';
 import '../../streak/providers/streak_freeze_provider.dart';
 import '../../streak/providers/streak_provider.dart';
@@ -23,6 +22,13 @@ import '../../whats_new/views/whats_new_sheet.dart';
 class DashboardView extends ConsumerWidget {
   const DashboardView({super.key});
 
+  static String _formatMin(int m) {
+    if (m < 60) return '${m}dk';
+    final h = m ~/ 60;
+    final r = m % 60;
+    return r == 0 ? '${h}sa' : '${h}sa ${r}dk';
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -32,8 +38,6 @@ class DashboardView extends ConsumerWidget {
     final today = ref.watch(todayFocusStatsProvider);
     final qNotifier = ref.read(questionLogProvider.notifier);
     ref.watch(questionLogProvider);
-    final mocks = ref.watch(mockExamProvider);
-    final mockNotifier = ref.read(mockExamProvider.notifier);
     final isPremium = ref.watch(isPremiumProvider);
 
     if (profile == null) return const SizedBox.shrink();
@@ -65,36 +69,66 @@ class DashboardView extends ConsumerWidget {
         padding: EdgeInsets.fromLTRB(
             16, 8, 16, 140 + MediaQuery.of(context).padding.bottom),
         children: [
-          // Sınav countdown — ince satır (dev gradient yerine sakin kart)
+          // Sınav countdown — büyük gradient kart (ekranın imza kartı)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: colorScheme.surface,
-              borderRadius: BorderRadius.circular(16),
+              gradient: LinearGradient(
+                colors: [
+                  profile.examType.color,
+                  profile.examType.color.withAlpha(150),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(profile.examType.icon,
-                    color: colorScheme.primary, size: 22),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'YKS\'ye ${profile.daysUntilExam} gün',
+                Row(
+                  children: [
+                    Icon(profile.examType.icon, color: Colors.white, size: 28),
+                    const SizedBox(width: 8),
+                    Text(
+                      profile.examType.title,
+                      style: textTheme.titleMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '${profile.daysUntilExam}',
+                      style: textTheme.displayLarge?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        height: 1,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        'gün kaldı',
                         style: textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
+                          color: Colors.white.withAlpha(220),
                         ),
                       ),
-                      Text(
-                        '${profile.examType.title} • '
-                        '${DateFormat('d MMMM', 'tr_TR').format(profile.examDate)}',
-                        style: textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  DateFormat('d MMMM yyyy, EEEE', 'tr_TR')
+                      .format(profile.examDate),
+                  style: textTheme.bodySmall?.copyWith(
+                    color: Colors.white.withAlpha(220),
                   ),
                 ),
               ],
@@ -129,78 +163,94 @@ class DashboardView extends ConsumerWidget {
           const _CoachTodayCard(),
           const SizedBox(height: 24),
 
-          // === ALT FOLD: Detaylı istatistikler ===
-          Row(
-            children: [
-              Expanded(
-                child: _DailyProgressCard(
-                  todayMin: todayMin,
-                  targetMin: dailyTargetMin,
-                  progress: dailyProgress,
+          // === Bugün — tek kart: hedef + soru/net (eşit iki sütun) ===
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.flag_outlined,
+                              color: colorScheme.primary, size: 18),
+                          const SizedBox(width: 6),
+                          Text('Günlük Hedef',
+                              style: textTheme.labelSmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              )),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '${_formatMin(todayMin)} / ${_formatMin(dailyTargetMin)}',
+                        style: textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: dailyProgress,
+                          minHeight: 6,
+                          backgroundColor:
+                              colorScheme.primary.withAlpha(30),
+                          color: dailyProgress >= 1.0
+                              ? AppColors.success
+                              : colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _StatTile(
-                  icon: Icons.edit_note,
-                  label: 'Bugün',
-                  value: '${qNotifier.todayTotalQuestions} soru',
-                  sub: '${qNotifier.todayTotalNet.toStringAsFixed(1)} net',
-                  color: AppColors.quickAction,
+                Container(
+                  width: 1,
+                  height: 56,
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  color: colorScheme.outlineVariant.withAlpha(80),
                 ),
-              ),
-            ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.edit_note,
+                              color: AppColors.quickAction, size: 18),
+                          const SizedBox(width: 6),
+                          Text('Bugün',
+                              style: textTheme.labelSmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              )),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '${qNotifier.todayTotalQuestions} soru',
+                        style: textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        '${qNotifier.todayTotalNet.toStringAsFixed(1)} net',
+                        style: textTheme.labelSmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _StatTile(
-                  icon: Icons.assessment_outlined,
-                  label: 'Son Deneme',
-                  value: mockNotifier.lastNet?.toStringAsFixed(1) ?? '—',
-                  sub: profile.targetNet != null
-                      ? 'Hedef: ${profile.targetNet!.toStringAsFixed(0)}'
-                      : (mocks.isEmpty
-                          ? 'Deneme ekle'
-                          : 'Ort: ${mockNotifier.averageNet.toStringAsFixed(1)}'),
-                  color: AppColors.mockExam,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _QuickAction(
-                  icon: Icons.menu_book_outlined,
-                  label: 'Dersler',
-                  color: AppColors.study,
-                  onTap: () => context.go('/subjects'),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _QuickAction(
-                  icon: Icons.bar_chart,
-                  label: 'Analiz',
-                  color: AppColors.insight,
-                  onTap: () => context.go('/stats'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _QuickAction(
-                  icon: Icons.calendar_month_outlined,
-                  label: 'Takvim',
-                  color: colorScheme.primary,
-                  onTap: () => context.go('/calendar'),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
 
           // Hata Sepeti tanıtım / bekleyen sayısı
           const _MistakeBucketCard(),
@@ -555,175 +605,8 @@ class _StreakHero extends ConsumerWidget {
   }
 }
 
-class _DailyProgressCard extends StatelessWidget {
-  const _DailyProgressCard({
-    required this.todayMin,
-    required this.targetMin,
-    required this.progress,
-  });
 
-  final int todayMin;
-  final int targetMin;
-  final double progress;
 
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-    final color = progress >= 1.0
-        ? const Color(0xFF10B981)
-        : colorScheme.primary;
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.flag_outlined, color: color, size: 18),
-              const SizedBox(width: 6),
-              Text('Günlük Hedef',
-                  style: textTheme.labelSmall
-                      ?.copyWith(color: colorScheme.onSurfaceVariant)),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            '${_format(todayMin)} / ${_format(targetMin)}',
-            style: textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 6),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 6,
-              backgroundColor: color.withAlpha(40),
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _format(int m) {
-    if (m < 60) return '${m}dk';
-    final h = m ~/ 60;
-    final r = m % 60;
-    return r == 0 ? '${h}sa' : '${h}sa ${r}dk';
-  }
-}
-
-class _StatTile extends StatelessWidget {
-  const _StatTile({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.sub,
-    required this.color,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-  final String sub;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
-    // Nötr yüzey — renk yalnızca ikonda. Renkli kutu enflasyonu
-    // "yapay zeka yapmış" görünümünün ana sebebiydi.
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: color, size: 18),
-              const SizedBox(width: 6),
-              Text(label,
-                  style: textTheme.labelSmall
-                      ?.copyWith(color: colorScheme.onSurfaceVariant)),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: colorScheme.onSurface,
-            ),
-          ),
-          Text(
-            sub,
-            style: textTheme.labelSmall
-                ?.copyWith(color: colorScheme.onSurfaceVariant),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _QuickAction extends StatelessWidget {
-  const _QuickAction({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Material(
-      color: colorScheme.surface,
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
-          child: Row(
-            children: [
-              Icon(icon, color: color, size: 20),
-              const SizedBox(width: 10),
-              Text(
-                label,
-                style: TextStyle(
-                  color: colorScheme.onSurface,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 
 class _MistakeBucketCard extends ConsumerWidget {
