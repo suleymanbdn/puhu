@@ -51,12 +51,19 @@ class DashboardView extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => showQuickLogSheet(context),
-        icon: const Icon(Icons.add_chart_rounded),
-        label: const Text('Soru Ekle'),
+      // Bottom nav FAB'i kapatıyor — Padding ile tab bar'ın üstüne al.
+      // (Transform.translate KULLANMA: görseli taşır ama hit-test alanı
+      // Scaffold sınırı dışında kalır, buton tıklanamaz olur.)
+      floatingActionButton: Padding(
+        padding: EdgeInsets.only(
+            bottom: 72 + MediaQuery.of(context).padding.bottom),
+        child: FloatingActionButton.extended(
+          shape: const StadiumBorder(),
+          onPressed: () => showQuickLogSheet(context),
+          icon: const Icon(Icons.add_chart_rounded),
+          label: const Text('Soru Ekle'),
+        ),
       ),
-      // Bottom nav var → FAB'i biraz yukarı al, üstte kalmasın.
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       appBar: AppBar(
         title: const Text('Anasayfa'),
@@ -235,12 +242,9 @@ class DashboardView extends ConsumerWidget {
           // Puhu+ tanıtım kartı — yalnızca trigger anlarında (her zaman değil)
           if (!isPremium) ...[
             Builder(builder: (_) {
-              final remainingLogs =
-                  ref.watch(remainingQuestionLogsProvider);
               final trigger = _premiumTrigger(
                 streak: streak,
                 daysUntilExam: profile.daysUntilExam,
-                remainingLogs: remainingLogs,
               );
               if (trigger == null) return const SizedBox.shrink();
               return Column(
@@ -267,22 +271,13 @@ enum _PromoTrigger {
 
   /// Sınava ≤ 30 gün kaldı — aciliyet.
   examUrgency,
-
-  /// Soru günlüğü limiti dolmak üzere (kalan ≤ 1).
-  limitNearlyHit,
 }
 
 /// Hangi trigger şu an aktif? (Hiçbiri yoksa null → kart gösterilmez.)
-///
-/// Sıralama önem önceliğine göre: limit > sınav > streak.
 _PromoTrigger? _premiumTrigger({
   required StreakStats streak,
   required int daysUntilExam,
-  required int remainingLogs,
 }) {
-  if (remainingLogs >= 0 && remainingLogs <= 1) {
-    return _PromoTrigger.limitNearlyHit;
-  }
   if (daysUntilExam > 0 && daysUntilExam <= 30) {
     return _PromoTrigger.examUrgency;
   }
@@ -303,21 +298,17 @@ class _PremiumPromoCard extends StatelessWidget {
         return '🔥 Streak\'in patladı — Puhu+ ile hızını koru';
       case _PromoTrigger.examUrgency:
         return '⏰ Sınav yakın — son kulvar için tam destek';
-      case _PromoTrigger.limitNearlyHit:
-        return '📊 Günlük hakkın dolmak üzere — sınırsıza geç';
     }
   }
 
   String get _subtitle {
     switch (trigger) {
       case _PromoTrigger.streakMilestone:
-        return 'Sınırsız soru günlüğü, tüm deneme geçmişi ve 5 streak '
+        return 'Tüm deneme geçmişi, zayıf konu analizi ve 5 streak '
             'freeze/ay';
       case _PromoTrigger.examUrgency:
-        return 'Tüm deneme geçmişi, zayıf konu analizi ve sınırsız '
-            'soru günlüğü';
-      case _PromoTrigger.limitNearlyHit:
-        return 'Sınırsız soru günlüğü + tüm premium özellikler';
+        return 'Tüm deneme geçmişi, zayıf konu analizi ve gelişmiş '
+            'grafikler';
     }
   }
 
@@ -426,8 +417,8 @@ class _StreakHero extends ConsumerWidget {
     final subtitle = streak.studiedToday
         ? 'Bugün çalıştın — devam et!'
         : (streak.currentStreak > 0
-            ? 'Bugün çalışmayı unutma — streak\'i kaybetme'
-            : 'İlk gününü başlat 🔥');
+            ? '15 dakika yeter — serin bugün de sürsün ✨'
+            : 'Bugün küçük bir adım at — yeni seri başlasın 💪');
 
     final showFreezeCta = streak.canFreezeYesterday;
     final hasFreezeToken = remainingFreeze > 0;
@@ -560,7 +551,7 @@ class _StreakHero extends ConsumerWidget {
                         child: Text(
                           hasFreezeToken
                               ? 'Dünü kurtar → streak\'i ${streak.streakIfYesterdayFrozen} güne yükselt'
-                              : 'Aylık freeze hakkın bitti',
+                              : 'Dün kaçtı — ama bugün yeni bir başlangıç 💪',
                           style: textTheme.bodyMedium?.copyWith(
                             fontWeight: FontWeight.w600,
                             color: Theme.of(context).colorScheme.onSurface,
@@ -579,15 +570,11 @@ class _StreakHero extends ConsumerWidget {
                                 '${remainingFreeze - 1}/$maxFreeze)'),
                             onPressed: () => _useFreeze(context, ref),
                           )
-                        : FilledButton.icon(
-                            icon: const Icon(
-                                Icons.workspace_premium_rounded),
+                        : FilledButton.tonalIcon(
+                            icon: const Icon(Icons.timer_outlined),
                             label: const Text(
-                                'Puhu+ ile 5 freeze/ay\'a yüksel'),
-                            style: FilledButton.styleFrom(
-                              backgroundColor: AppColors.premium,
-                            ),
-                            onPressed: () => showPaywall(context),
+                                '15 dk çalış — bugünü kazan'),
+                            onPressed: () => context.go('/timer'),
                           ),
                   ),
                 ],

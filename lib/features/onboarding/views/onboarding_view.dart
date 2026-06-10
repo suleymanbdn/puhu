@@ -96,6 +96,13 @@ class _OnboardingViewState extends ConsumerState<OnboardingView> {
       // Time budget'ları yeniden oluştur
       await ref.read(timeBudgetProvider.notifier).initializeForExamType();
 
+      // Bildirim izni — bağlamıyla, onboarding bitiminde istenir.
+      // Reddedilirse sessizce devam; planlama yine yapılır (izin sonradan
+      // verilirse bildirimler çalışmaya başlar).
+      try {
+        await NotificationService.instance.requestPermissions();
+      } catch (_) {}
+
       // Bildirimleri planla
       await NotificationService.instance.scheduleExamReminders(_examDate);
       await NotificationService.instance.scheduleDailyReminder();

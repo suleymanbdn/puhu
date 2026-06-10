@@ -11,7 +11,7 @@ void main() {
   });
 
   test('Ücretsiz sürüm limitleri makul', () {
-    expect(FreeLimits.questionLogsPerDay, greaterThan(0));
+    // v1.2.0: soru günlüğü limiti kaldırıldı — core loop ücretsiz.
     expect(FreeLimits.mockExamsVisible, greaterThan(0));
   });
 

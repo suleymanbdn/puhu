@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-import '../../../core/services/feature_gate.dart';
 import '../../exam/models/exam_profile.dart';
 import '../../exam/providers/exam_profile_provider.dart';
 import '../../subjects/models/subject.dart';
@@ -37,8 +36,6 @@ class QuestionLogView extends ConsumerWidget {
     final profile = ref.watch(examProfileProvider);
     final logs = ref.watch(questionLogProvider);
     final notifier = ref.read(questionLogProvider.notifier);
-    final canAdd = ref.watch(canAddQuestionLogProvider);
-    final remaining = ref.watch(remainingQuestionLogsProvider);
 
     if (profile == null) return const SizedBox.shrink();
 
@@ -103,10 +100,6 @@ class QuestionLogView extends ConsumerWidget {
               ],
             ),
           ),
-          if (remaining < 9999) ...[
-            const SizedBox(height: 12),
-            _RemainingBanner(remaining: remaining),
-          ],
           const SizedBox(height: 24),
           Text(
             'Geçmiş',
@@ -141,20 +134,8 @@ class QuestionLogView extends ConsumerWidget {
                   ),
                   const SizedBox(height: 18),
                   FilledButton.tonalIcon(
-                    onPressed: canAdd
-                        ? () async {
-                            // Soru ekleme bottom sheet'ini açan utility
-                            // import edemediği için bu ekranda zaten "+"
-                            // butonu mevcut (alt FAB); ipucu olarak göster.
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                    'Sağ alttaki + butonuna basarak başla'),
-                                duration: Duration(seconds: 2),
-                              ),
-                            );
-                          }
-                        : null,
+                    onPressed: () => _AddLogSheet.show(context,
+                        examType: _filter(profile.examType)),
                     icon: const Icon(Icons.add_chart_rounded),
                     label: const Text('Hemen başla'),
                   ),
@@ -165,68 +146,17 @@ class QuestionLogView extends ConsumerWidget {
             ...logs.map((log) => _LogTile(log: log)),
         ],
       ),
-      floatingActionButton: Transform.translate(
-        offset: Offset(0, -(96 + MediaQuery.of(context).padding.bottom)),
+      // Padding (Transform değil): hit-test alanının görselle aynı yerde
+      // kalması için — Transform.translate'li FAB tıklanamıyordu.
+      floatingActionButton: Padding(
+        padding: EdgeInsets.only(
+            bottom: 72 + MediaQuery.of(context).padding.bottom),
         child: FloatingActionButton.extended(
           shape: const StadiumBorder(),
-          onPressed: () {
-            if (canAdd) {
-              _AddLogSheet.show(context, examType: _filter(profile.examType));
-            } else {
-              showPaywall(context,
-                  feature: PremiumFeature.unlimitedQuestionLog);
-            }
-          },
-          icon: Icon(canAdd ? Icons.add : Icons.lock_outline),
-          label: Text(canAdd ? 'Soru Ekle' : 'Puhu+ ile Sınırsız'),
-        ),
-      ),
-    );
-  }
-}
-
-/// Ücretsiz kullanıcıya kalan günlük soru kaydı hakkını gösteren bant.
-class _RemainingBanner extends StatelessWidget {
-  const _RemainingBanner({required this.remaining});
-
-  final int remaining;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-    final isEmpty = remaining <= 0;
-    final color = isEmpty ? colorScheme.error : colorScheme.primary;
-
-    return InkWell(
-      onTap: isEmpty
-          ? () => showPaywall(context,
-              feature: PremiumFeature.unlimitedQuestionLog)
-          : null,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: color.withAlpha(20),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withAlpha(60)),
-        ),
-        child: Row(
-          children: [
-            Icon(isEmpty ? Icons.lock_outline : Icons.bolt_outlined,
-                size: 18, color: color),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                isEmpty
-                    ? 'Günlük ücretsiz limit doldu. Puhu+ ile sınırsız kayıt.'
-                    : 'Bugün $remaining ücretsiz kayıt hakkın kaldı.',
-                style: textTheme.bodySmall?.copyWith(color: color),
-              ),
-            ),
-            if (isEmpty)
-              Icon(Icons.chevron_right, size: 18, color: color),
-          ],
+          onPressed: () =>
+              _AddLogSheet.show(context, examType: _filter(profile.examType)),
+          icon: const Icon(Icons.add),
+          label: const Text('Soru Ekle'),
         ),
       ),
     );
@@ -330,6 +260,9 @@ class _AddLogSheet extends ConsumerStatefulWidget {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      // Root navigator: sheet alt tab bar'ın ÜZERİNDE açılmalı — yoksa
+      // Kaydet butonu tab bar arkasında kalıp erişilemez oluyor.
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _AddLogSheet(examType: examType),
     );

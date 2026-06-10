@@ -62,6 +62,18 @@ void main() async {
     } catch (_) {}
   }
 
+  // v1.2.0 migration: günde 3 rutin bildirim → tek akşam bildirimi (19:00).
+  // Eski 09:00 hedef + 18:00 hata bildirimlerini iptal et, akşam
+  // hatırlatıcısını yeni saat/mesajla yeniden planla.
+  if (!(prefs.getBool('single_evening_reminder_v1') ?? false)) {
+    try {
+      await NotificationService.instance.cancelDailyReminder();
+      await NotificationService.instance.cancelMistakeReviewReminder();
+      await NotificationService.instance.scheduleStreakBreakReminder();
+      await prefs.setBool('single_evening_reminder_v1', true);
+    } catch (_) {}
+  }
+
   // Uygulamayı çalıştır
   runApp(
     ProviderScope(

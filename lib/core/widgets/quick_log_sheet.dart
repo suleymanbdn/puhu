@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/exam/models/exam_profile.dart';
 import '../../features/exam/providers/exam_profile_provider.dart';
+import '../../features/mistakes/providers/mistake_provider.dart';
 import '../../features/questions/providers/question_log_provider.dart';
 import '../../features/subjects/models/subject.dart';
-import '../services/feature_gate.dart';
 import '../theme/app_colors.dart';
 
 /// Hızlı soru kaydı bottom-sheet.
@@ -14,11 +14,14 @@ import '../theme/app_colors.dart';
 /// Tek modal'da: ders chip seçer → doğru/yanlış/boş stepper'larını
 /// ayarlar → kaydet. Tab değiştirmeden, mevcut ekrandan çıkmadan log.
 ///
-/// Premium limiti dolduysa paywall'a yönlendirir.
+/// Yanlış varsa "Hata Sepetine de ekle" seçeneği görünür — tek dokunuşla
+/// spaced repetition döngüsüne girer.
 Future<void> showQuickLogSheet(BuildContext context) async {
   await showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
+    // Root navigator: alt tab bar'ın üzerinde açıl (buton erişimi için).
+    useRootNavigator: true,
     backgroundColor: Theme.of(context).colorScheme.surface,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
@@ -45,6 +48,7 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
   int _wrong = 0;
   int _blank = 0;
   bool _saving = false;
+  bool _addToMistakes = false;
 
   ExamTypeFilter _filter(ExamType t) {
     switch (t) {
@@ -77,12 +81,24 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
             wrong: _wrong,
             blank: _blank,
           );
+      // Kullanıcı isterse yanlışları tek kayıtla hata sepetine de at —
+      // spaced repetition döngüsü manuel ekleme olmadan başlar.
+      if (_addToMistakes && _wrong > 0) {
+        await ref.read(mistakeProvider.notifier).add(
+              subjectId: subject.id,
+              title: '${subject.title} — $_wrong yanlış',
+              note: 'Hızlı kayıttan eklendi. Yanlışlarını gözden geçir.',
+            );
+      }
       if (mounted) {
         navigator.maybePop();
         messenger.showSnackBar(
           SnackBar(
             content: Text(
-              '${subject.title} • ${_net.toStringAsFixed(2)} net kaydedildi',
+              _addToMistakes && _wrong > 0
+                  ? '${subject.title} • ${_net.toStringAsFixed(2)} net '
+                      'kaydedildi + sepete eklendi 📓'
+                  : '${subject.title} • ${_net.toStringAsFixed(2)} net kaydedildi',
             ),
             duration: const Duration(seconds: 2),
           ),
@@ -99,14 +115,8 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final profile = ref.watch(examProfileProvider);
-    final canAdd = ref.watch(canAddQuestionLogProvider);
-    final remaining = ref.watch(remainingQuestionLogsProvider);
 
     if (profile == null) return const SizedBox.shrink();
-
-    if (!canAdd) {
-      return _LimitReached(remaining: remaining);
-    }
 
     final subjects = Subject.forExamType(_filter(profile.examType));
     final canSave = _selected != null && _total > 0;
@@ -247,6 +257,60 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
             ),
           if (_total > 0) const SizedBox(height: 14),
 
+          // Yanlış varsa: tek dokunuşla hata sepetine ekleme seçeneği
+          if (_wrong > 0) ...[
+            InkWell(
+              onTap: () => setState(() => _addToMistakes = !_addToMistakes),
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: _addToMistakes
+                      ? AppColors.subtleOf(AppColors.danger)
+                      : colorScheme.onSurface.withAlpha(10),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: _addToMistakes
+                        ? AppColors.softOf(AppColors.danger)
+                        : Colors.transparent,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      _addToMistakes
+                          ? Icons.bookmark_added_rounded
+                          : Icons.bookmark_add_outlined,
+                      size: 20,
+                      color: _addToMistakes
+                          ? AppColors.danger
+                          : colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Yanlışları Hata Sepetine de ekle',
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: _addToMistakes
+                              ? AppColors.danger
+                              : colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    Switch(
+                      value: _addToMistakes,
+                      activeTrackColor: AppColors.danger,
+                      onChanged: (v) => setState(() => _addToMistakes = v),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+          ],
+
           // Kaydet
           SizedBox(
             width: double.infinity,
@@ -370,66 +434,6 @@ class _StepperBtn extends StatelessWidget {
           size: 18,
           color: onTap == null ? color.withAlpha(120) : color,
         ),
-      ),
-    );
-  }
-}
-
-/// Limit dolduğunda gösterilen panel — Puhu+ promosyonu.
-class _LimitReached extends StatelessWidget {
-  const _LimitReached({required this.remaining});
-  final int remaining;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 40,
-            height: 4,
-            margin: const EdgeInsets.only(bottom: 16),
-            decoration: BoxDecoration(
-              color: colorScheme.onSurfaceVariant.withAlpha(60),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const Icon(Icons.lock_outline, size: 40, color: AppColors.premium),
-          const SizedBox(height: 12),
-          Text(
-            'Günlük limit doldu',
-            style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Ücretsiz planda günde belirli sayıda kayıt hakkın var '
-            '(kalan: $remaining). Sınırsız soru günlüğü için Puhu+\'a geç.',
-            style: textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              icon: const Icon(Icons.workspace_premium_rounded),
-              label: const Text('Puhu+\'a Geç'),
-              onPressed: () {
-                Navigator.of(context).pop();
-                showPaywall(context);
-              },
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

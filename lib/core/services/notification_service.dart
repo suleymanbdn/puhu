@@ -22,24 +22,44 @@ class NotificationService {
 
     tz.initializeTimeZones();
 
+    // İzin İSTEMEDEN initialize — izin onboarding'in son adımında,
+    // "sana hatırlatalım mı?" bağlamıyla istenir (requestPermissions).
+    // Uygulama açılır açılmaz izin diyaloğu göstermek çoğu kullanıcının
+    // refleks olarak "İzin Verme" demesine yol açıyor.
     const androidInit =
         AndroidInitializationSettings('@mipmap/launcher_icon');
     const iosInit = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
     );
     const settings =
         InitializationSettings(android: androidInit, iOS: iosInit);
 
     await _plugin.initialize(settings: settings);
 
+    _isInitialized = true;
+  }
+
+  /// Bildirim iznini ister — onboarding'in son adımında, bağlamıyla çağrılır.
+  /// Daha önce cevaplanmışsa sistem diyaloğu tekrar çıkmaz.
+  Future<bool> requestPermissions() async {
     // Android 13+ runtime izin
     final androidImpl = _plugin.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
-    await androidImpl?.requestNotificationsPermission();
+    final androidGranted =
+        await androidImpl?.requestNotificationsPermission();
 
-    _isInitialized = true;
+    // iOS izin
+    final iosImpl = _plugin.resolvePlatformSpecificImplementation<
+        IOSFlutterLocalNotificationsPlugin>();
+    final iosGranted = await iosImpl?.requestPermissions(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+
+    return (androidGranted ?? iosGranted) ?? false;
   }
 
   // ============================================================
@@ -149,50 +169,31 @@ class NotificationService {
     }
   }
 
-  /// Günlük çalışma hedefini hatırlatma bildirimi (her gün belirli saatte)
+  /// Günlük hatırlatıcı — v1.2.0'dan itibaren ayrı bir sabah bildirimi
+  /// YOK (bildirim yorgunluğu). Tek akşam bildirimi her şeyi kapsar;
+  /// bu metot geriye dönük uyumluluk için akşam hatırlatıcısına yönlenir.
   Future<void> scheduleDailyReminder({
     int hour = 9,
     int minute = 0,
   }) async {
+    // Eski sabah bildirimi planlıysa iptal et.
     await _plugin.cancel(id: 500);
-
-    final now = DateTime.now();
-    var first = DateTime(now.year, now.month, now.day, hour, minute);
-    if (first.isBefore(now)) {
-      first = first.add(const Duration(days: 1));
-    }
-
-    await _plugin.zonedSchedule(
-      id: 500,
-      title: 'Günaydın! 🌅',
-      body: 'Bugünkü çalışma hedefini hatırla, başlamanın tam zamanı.',
-      scheduledDate: tz.TZDateTime.from(first, tz.local),
-      notificationDetails: const NotificationDetails(
-        android: AndroidNotificationDetails(
-          _dailyChannel,
-          'Günlük Hatırlatıcı',
-          channelDescription: 'Her gün çalışma hedefini hatırlatır',
-          importance: Importance.high,
-          priority: Priority.high,
-        ),
-        iOS: DarwinNotificationDetails(),
-      ),
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      matchDateTimeComponents: DateTimeComponents.time, // her gün
-    );
+    await scheduleStreakBreakReminder();
   }
 
   Future<void> cancelDailyReminder() async {
     await _plugin.cancel(id: 500);
   }
 
-  /// Akşam streak break uyarısı — her gün belirli saatte (varsayılan 20:00)
-  /// tetiklenir. Mesaj kullanıcının streak'ini kaybetmemesi için çalışmaya
-  /// davet eder. Streak Freeze'i olan kullanıcılar için bile motivasyon
-  /// kaynağı; gün içinde çalışan kullanıcı için ise app açtığında
-  /// [cancelStreakBreakReminderToday] ile bugünkü instance kapatılır.
+  /// Günün TEK rutin bildirimi — akşam hatırlatıcısı (varsayılan 19:00).
+  ///
+  /// v1.2.0: Önceden günde 3 ayrı bildirim vardı (09:00 hedef + 18:00 hata
+  /// + 20:00 streak) — bildirim yorgunluğu yaratıyordu. Artık tek pozitif
+  /// akşam mesajı streak + hata tekrarını birlikte kapsar. Gün içinde
+  /// çalışan kullanıcı için [cancelStreakBreakReminderToday] bugünkü
+  /// bildirimi susturur.
   Future<void> scheduleStreakBreakReminder({
-    int hour = 20,
+    int hour = 19,
     int minute = 0,
   }) async {
     await _plugin.cancel(id: 600);
@@ -205,8 +206,8 @@ class NotificationService {
 
     await _plugin.zonedSchedule(
       id: 600,
-      title: 'Streak\'ini kaybetme 🔥',
-      body: 'Bugün hâlâ çalışmadıysan kısa bir pomodoro bile yeter.',
+      title: 'Günü kapatmadan ✨',
+      body: '15 dakika yeter — serin sürsün, bekleyen hatalarına da göz at.',
       scheduledDate: tz.TZDateTime.from(first, tz.local),
       notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
@@ -236,40 +237,15 @@ class NotificationService {
     await _plugin.cancel(id: 600);
   }
 
-  /// Hata Sepeti günlük tekrar uyarısı — varsayılan 18:00. Mesaj her gün
-  /// aynı; sepette bekleyen yoksa kullanıcı bildirimi gör-ardımcı kapatır,
-  /// var ise tekrar oturumuna girer.
+  /// Hata Sepeti uyarısı — v1.2.0'dan itibaren ayrı bildirim YOK; akşam
+  /// hatırlatıcısı (19:00) hata tekrarını da kapsıyor. Bu metot eski
+  /// planlanmış bildirimi temizler ve akşam hatırlatıcısını garantiler.
   Future<void> scheduleMistakeReviewReminder({
     int hour = 18,
     int minute = 0,
   }) async {
     await _plugin.cancel(id: 700);
-
-    final now = DateTime.now();
-    var first = DateTime(now.year, now.month, now.day, hour, minute);
-    if (first.isBefore(now)) {
-      first = first.add(const Duration(days: 1));
-    }
-
-    await _plugin.zonedSchedule(
-      id: 700,
-      title: 'Hata Sepeti 📓',
-      body: 'Bekleyen hatalarına bir göz at — 10 dakika yeter.',
-      scheduledDate: tz.TZDateTime.from(first, tz.local),
-      notificationDetails: const NotificationDetails(
-        android: AndroidNotificationDetails(
-          _reviewChannel,
-          'Hata Tekrarı',
-          channelDescription:
-              'Hata sepetindeki bekleyen kayıtları gözden geçirme uyarısı',
-          importance: Importance.high,
-          priority: Priority.high,
-        ),
-        iOS: DarwinNotificationDetails(),
-      ),
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      matchDateTimeComponents: DateTimeComponents.time, // her gün aynı saat
-    );
+    await scheduleStreakBreakReminder();
   }
 
   Future<void> cancelMistakeReviewReminder() async {

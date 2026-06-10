@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/paywall/views/paywall_view.dart';
-import '../../features/questions/providers/question_log_provider.dart';
-import 'purchase_service.dart';
 
 /// Ücretsiz sürümün sayısal sınırları.
+///
+/// NOT (v1.2.0): Soru günlüğü limiti KALDIRILDI. Soru kaydı uygulamanın
+/// core loop'u — kilitlemek kullanıcıyı ilk gün kaybettirir. Premium değer
+/// artık analiz tarafında: tüm deneme geçmişi, zayıf konu analizi, grafikler.
 class FreeLimits {
   FreeLimits._();
-
-  /// Ücretsiz kullanıcının günde ekleyebileceği soru günlüğü kaydı sayısı.
-  static const int questionLogsPerDay = 3;
 
   /// Ücretsiz kullanıcıya gösterilen en yeni deneme sayısı.
   static const int mockExamsVisible = 2;
@@ -18,9 +16,6 @@ class FreeLimits {
 
 /// Premium (Puhu+) ile açılan özellikler.
 enum PremiumFeature {
-  /// Sınırsız soru günlüğü kaydı.
-  unlimitedQuestionLog,
-
   /// Tüm deneme geçmişi + hedef-progres grafikleri.
   fullMockHistory,
 
@@ -29,6 +24,9 @@ enum PremiumFeature {
 
   /// Gelişmiş istatistik grafikleri.
   advancedCharts,
+
+  /// Aylık 5 streak freeze (ücretsizde 2).
+  extraStreakFreeze,
 
   /// Özel temalar ve uygulama ikonları.
   customThemes,
@@ -41,14 +39,14 @@ extension PremiumFeatureInfo on PremiumFeature {
   /// Paywall'da gösterilecek kısa başlık.
   String get title {
     switch (this) {
-      case PremiumFeature.unlimitedQuestionLog:
-        return 'Sınırsız soru günlüğü';
       case PremiumFeature.fullMockHistory:
         return 'Tüm deneme geçmişi';
       case PremiumFeature.weakTopicAnalysis:
         return 'Zayıf konu analizi';
       case PremiumFeature.advancedCharts:
         return 'Gelişmiş grafikler';
+      case PremiumFeature.extraStreakFreeze:
+        return 'Ayda 5 streak dondurma';
       case PremiumFeature.customThemes:
         return 'Özel tema ve ikonlar';
       case PremiumFeature.pdfExport:
@@ -56,26 +54,6 @@ extension PremiumFeatureInfo on PremiumFeature {
     }
   }
 }
-
-/// Ücretsiz kullanıcının bugün kaç soru günlüğü kaydı kaldığını verir.
-/// Premium kullanıcıda her zaman sınırsızdır.
-final remainingQuestionLogsProvider = Provider<int>((ref) {
-  if (ref.watch(isPremiumProvider)) return 9999;
-  final logs = ref.watch(questionLogProvider);
-  final now = DateTime.now();
-  final todayCount = logs.where((l) {
-    return l.date.year == now.year &&
-        l.date.month == now.month &&
-        l.date.day == now.day;
-  }).length;
-  final remaining = FreeLimits.questionLogsPerDay - todayCount;
-  return remaining < 0 ? 0 : remaining;
-});
-
-/// Yeni bir soru günlüğü kaydı eklenebilir mi?
-final canAddQuestionLogProvider = Provider<bool>((ref) {
-  return ref.watch(remainingQuestionLogsProvider) > 0;
-});
 
 /// Puhu+ paywall ekranını tam ekran modal olarak açar.
 Future<void> showPaywall(
