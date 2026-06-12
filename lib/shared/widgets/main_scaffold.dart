@@ -39,13 +39,18 @@ class MainScaffold extends StatelessWidget {
         child: navigationShell,
       ),
       bottomNavigationBar: Padding(
-        padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16, top: 0),
+        padding: const EdgeInsets.only(left: 16, right: 16, bottom: 28, top: 0),
         child: GlassContainer(
           borderRadius: BorderRadius.circular(24),
           color: isDark ? Colors.black : Colors.white,
           colorOpacity: isDark ? 0.4 : 0.7,
           blur: 20,
-          child: NavigationBar(
+          // NavigationBar, safe-area alt dolgusunu kendi içine alıp camı
+          // uzatıyordu — dolguyu kaldır, boşluğu dıştaki Padding yönetir.
+          child: MediaQuery.removePadding(
+            context: context,
+            removeBottom: true,
+            child: NavigationBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
             // Default 80 çok yüksek — buğulu bar ekranı yiyordu.
@@ -85,6 +90,7 @@ class MainScaffold extends StatelessWidget {
                 label: 'Analiz',
               ),
             ],
+          ),
           ),
         ),
       ),
