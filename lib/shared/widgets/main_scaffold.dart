@@ -13,31 +13,34 @@ class MainScaffold extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return Scaffold(
-      extendBody: true, // Arkasındaki gradient gözüksün
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: isDark
-              ? const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFF0F172A), // Slate 900
-                    Color(0xFF1E1B4B), // Indigo 950
-                    Color(0xFF000000), // Black
-                  ],
-                )
-              : const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFFF8FAFC),
-                    Color(0xFFF1F5F9),
-                  ],
-                ),
-        ),
-        child: navigationShell,
+    // Gradient TÜM scaffold'ı sarar: bar bölgesinin arkası da gradient
+    // olur. extendBody kapalı → içerik camın arkasına akıp blur'da parlak
+    // blok oluşturmaz; cam yalnızca gradient'i süzer.
+    return Container(
+      decoration: BoxDecoration(
+        gradient: isDark
+            ? const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF0F172A), // Slate 900
+                  Color(0xFF1E1B4B), // Indigo 950
+                  Color(0xFF000000), // Black
+                ],
+              )
+            : const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFFF8FAFC),
+                  Color(0xFFF1F5F9),
+                ],
+              ),
       ),
+      child: Scaffold(
+      backgroundColor: Colors.transparent,
+      extendBody: false,
+      body: navigationShell,
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.only(left: 16, right: 16, bottom: 28, top: 0),
         child: GlassContainer(
@@ -94,6 +97,6 @@ class MainScaffold extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ));
   }
 }
