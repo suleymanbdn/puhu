@@ -358,11 +358,24 @@ class AppTheme {
         ),
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: _surfaceD2,
+        // OPAK — _surfaceD2 transparent; dialog'lar arka içeriği gösteriyordu.
+        backgroundColor: _sheetD,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         titleTextStyle: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: _onSurfaceD),
         contentTextStyle: GoogleFonts.inter(fontSize: 14, color: _subtleD),
+      ),
+      // Diğer yüzen bileşenler de şeffaf surface'tan türemesin — opak zorla.
+      datePickerTheme: const DatePickerThemeData(
+        backgroundColor: _sheetD,
+        surfaceTintColor: Colors.transparent,
+      ),
+      timePickerTheme: const TimePickerThemeData(
+        backgroundColor: _sheetD,
+      ),
+      popupMenuTheme: const PopupMenuThemeData(
+        color: _sheetD,
+        surfaceTintColor: Colors.transparent,
       ),
     );
   }
