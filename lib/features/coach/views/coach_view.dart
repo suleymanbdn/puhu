@@ -405,7 +405,9 @@ class _TodayHero extends StatelessWidget {
                 ),
               ),
               onPressed: () =>
-                  GoRouter.of(context).push(recommendation.actionRoute),
+                  // Tab-shell route'larına (/timer, /home) push YAPILMAZ —
+                  // Navigator key çakışmasıyla crash olur; go ile geçilir.
+                  GoRouter.of(context).go(recommendation.actionRoute),
               style: FilledButton.styleFrom(
                 backgroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
