@@ -156,7 +156,12 @@ class _PuhuHeader extends ConsumerStatefulWidget {
   ConsumerState<_PuhuHeader> createState() => _PuhuHeaderState();
 }
 
-class _PuhuHeaderState extends ConsumerState<_PuhuHeader> {
+class _PuhuHeaderState extends ConsumerState<_PuhuHeader>
+    with AutomaticKeepAliveClientMixin {
+  // Scroll'da ekran dışına çıkınca state (balon metni) sıfırlanmasın.
+  @override
+  bool get wantKeepAlive => true;
+
   String? _bubbleText;
   bool _animateBubble = false;
   bool _loading = false;
@@ -215,6 +220,7 @@ Bugünkü öneri: ${today.title}.
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // AutomaticKeepAlive için zorunlu
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final summarizer = ref.watch(aiSummarizerProvider);
