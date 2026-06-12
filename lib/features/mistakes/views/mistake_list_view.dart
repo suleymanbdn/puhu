@@ -178,7 +178,8 @@ class _MistakeList extends ConsumerWidget {
     }
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      padding: EdgeInsets.fromLTRB(
+          16, 12, 16, 140 + MediaQuery.of(context).padding.bottom),
       children: [
         if (showReviewCta && onReview != null) ...[
           _ReviewCta(count: mistakes.length, onTap: onReview!),

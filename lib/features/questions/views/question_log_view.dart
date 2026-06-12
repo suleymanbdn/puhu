@@ -52,7 +52,8 @@ class QuestionLogView extends ConsumerWidget {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+        padding: EdgeInsets.fromLTRB(
+            16, 8, 16, 140 + MediaQuery.of(context).padding.bottom),
         children: [
           // Bugün özeti
           Container(

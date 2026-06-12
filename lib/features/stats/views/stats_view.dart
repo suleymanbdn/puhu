@@ -56,7 +56,8 @@ class StatsView extends ConsumerWidget {
         title: const Text('Analiz'),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+        padding: EdgeInsets.fromLTRB(
+            16, 8, 16, 140 + MediaQuery.of(context).padding.bottom),
         children: [
           // Sınava kalan + bugün
           Container(
