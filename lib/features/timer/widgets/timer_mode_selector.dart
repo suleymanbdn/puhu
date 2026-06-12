@@ -53,7 +53,9 @@ class TimerModeSelector extends ConsumerWidget {
                     Icon(
                       _iconFor(type),
                       color: isSelected
-                          ? Colors.white
+                          ? (type.color.computeLuminance() > 0.5
+                              ? const Color(0xFF0B1020)
+                              : Colors.white)
                           : colorScheme.onSurfaceVariant,
                       size: 18,
                     ),
@@ -62,7 +64,9 @@ class TimerModeSelector extends ConsumerWidget {
                       type.title,
                       style: textTheme.labelSmall?.copyWith(
                         color: isSelected
-                            ? Colors.white
+                            ? (type.color.computeLuminance() > 0.5
+                                ? const Color(0xFF0B1020)
+                                : Colors.white)
                             : colorScheme.onSurfaceVariant,
                         fontWeight:
                             isSelected ? FontWeight.bold : FontWeight.normal,

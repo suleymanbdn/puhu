@@ -86,7 +86,8 @@ enum FocusType {
   Color get color {
     switch (this) {
       case FocusType.work:
-        return const Color(0xFF6366F1);
+        // Marka imza rengi (dark theme primary ile aynı neon cyan)
+        return const Color(0xFF00F0FF);
       case FocusType.shortBreak:
         return const Color(0xFF0EA5E9);
       case FocusType.longBreak:

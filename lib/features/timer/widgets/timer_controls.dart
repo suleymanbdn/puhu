@@ -232,7 +232,13 @@ class _MainControlButtonState extends State<_MainControlButton>
                   icon: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 300),
                     transitionBuilder: (child, animation) => ScaleTransition(scale: animation, child: child),
-                    child: Icon(icon, key: ValueKey(icon), color: Colors.white, size: 32),
+                    child: Icon(icon,
+                        key: ValueKey(icon),
+                        // Neon cyan gibi parlak zeminlerde beyaz ikon kaybolur
+                        color: widget.focusType.color.computeLuminance() > 0.5
+                            ? const Color(0xFF0B1020)
+                            : Colors.white,
+                        size: 32),
                   ),
                   padding: const EdgeInsets.all(18),
                 ),
