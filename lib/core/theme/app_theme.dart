@@ -143,7 +143,9 @@ class AppTheme {
         backgroundColor: _primaryL,
         foregroundColor: Colors.white,
         elevation: 0,
-        shape: CircleBorder(),
+        // StadiumBorder: CircleBorder, extended FAB'larda label'ı daireden
+        // taşırıyordu ("Hata Ekle" butonu).
+        shape: StadiumBorder(),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
@@ -295,7 +297,9 @@ class AppTheme {
         backgroundColor: _primaryD,
         foregroundColor: Color(0xFF1E1B4B),
         elevation: 0,
-        shape: CircleBorder(),
+        // StadiumBorder: CircleBorder, extended FAB'larda label'ı daireden
+        // taşırıyordu ("Hata Ekle" butonu).
+        shape: StadiumBorder(),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(

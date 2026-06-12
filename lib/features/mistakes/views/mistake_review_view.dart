@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../shared/widgets/app_background.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -65,7 +67,8 @@ class _MistakeReviewViewState extends ConsumerState<MistakeReviewView> {
     final textTheme = Theme.of(context).textTheme;
 
     if (_queue.isEmpty) {
-      return Scaffold(
+      return AppBackground(
+        child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(title: const Text('Tekrar')),
         body: Center(
@@ -98,7 +101,8 @@ class _MistakeReviewViewState extends ConsumerState<MistakeReviewView> {
             ),
           ),
         ),
-      );
+      ),
+    );
     }
 
     if (_index >= _queue.length) {
@@ -114,7 +118,8 @@ class _MistakeReviewViewState extends ConsumerState<MistakeReviewView> {
     final subject = _subjectFromId(m.subjectId);
     final color = subject?.color ?? colorScheme.primary;
 
-    return Scaffold(
+    return AppBackground(
+        child: Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: Text('Tekrar — ${_index + 1}/${_queue.length}'),
@@ -322,6 +327,7 @@ class _MistakeReviewViewState extends ConsumerState<MistakeReviewView> {
           ),
         ),
       ),
+    ),
     );
   }
 }
@@ -345,7 +351,8 @@ class _CompletionScreen extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final pct = total == 0 ? 0.0 : correct / total;
 
-    return Scaffold(
+    return AppBackground(
+        child: Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(automaticallyImplyLeading: false),
       body: Center(
@@ -389,6 +396,7 @@ class _CompletionScreen extends StatelessWidget {
           ),
         ),
       ),
+    ),
     );
   }
 }

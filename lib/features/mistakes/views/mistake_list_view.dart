@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../shared/widgets/app_background.dart';
 import '../../subjects/models/subject.dart';
 import '../models/mistake.dart';
 import '../providers/mistake_provider.dart';
@@ -31,7 +32,9 @@ class MistakeListView extends ConsumerWidget {
         .toList();
     final mastered = all.where((m) => m.mastered).toList();
 
-    return DefaultTabController(
+    // AppBackground: push route — sarmazsak önceki ekran arkadan görünür.
+    return AppBackground(
+        child: DefaultTabController(
       length: 3,
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -84,7 +87,7 @@ class MistakeListView extends ConsumerWidget {
           ],
         ),
       ),
-    );
+    ));
   }
 }
 

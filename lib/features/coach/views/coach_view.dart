@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../shared/widgets/app_background.dart';
 import '../../subjects/models/subject.dart';
 import '../models/study_plan.dart';
 import '../providers/ai_provider.dart';
@@ -27,14 +28,19 @@ class CoachView extends ConsumerWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
+    // AppBackground: push route'larda scaffold transparent — sarmazsak
+    // önceki ekran arkadan görünür ("eski ekran kalıyor" bug'ı).
     if (report == null) {
-      return const Scaffold(
-        backgroundColor: Colors.transparent,
-        body: Center(child: CircularProgressIndicator()),
+      return const AppBackground(
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Center(child: CircularProgressIndicator()),
+        ),
       );
     }
 
-    return Scaffold(
+    return AppBackground(
+        child: Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Koç'),
@@ -132,7 +138,7 @@ class CoachView extends ConsumerWidget {
           _AiCoachNoteSection(report: report, subjectFor: _subjectFromId),
         ],
       ),
-    );
+    ));
   }
 }
 
