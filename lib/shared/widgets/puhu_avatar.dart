@@ -185,13 +185,13 @@ class _PuhuPainter extends CustomPainter {
     canvas.drawPath(leftEar, earPaint);
     canvas.drawPath(rightEar, earPaint);
 
-    // ---- Kafa/gövde — yumuşak beşgen (icon'daki form) ----
+    // ---- Kafa/gövde — yumuşak oval (yuvarlak yüz) ----
     final head = Path()
-      ..moveTo(w * 0.14, h * 0.30)
-      ..quadraticBezierTo(w * 0.10, h * 0.74, cx, h * 0.94)
-      ..quadraticBezierTo(w * 0.90, h * 0.74, w * 0.86, h * 0.30)
-      ..quadraticBezierTo(cx, h * 0.12, w * 0.14, h * 0.30)
-      ..close();
+      ..addOval(Rect.fromCenter(
+        center: Offset(cx, h * 0.54),
+        width: w * 0.76,
+        height: h * 0.80,
+      ));
     canvas.drawPath(head, Paint()..color = _body);
     // Sağ yarı gölge — icon'daki iki tonlu yüz.
     canvas.save();
