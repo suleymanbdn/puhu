@@ -22,7 +22,7 @@ class AppBackground extends StatelessWidget {
                 colors: [
                   Color(0xFF0F172A),
                   Color(0xFF1E1B4B),
-                  Color(0xFF000000),
+                  Color(0xFF131433),
                 ],
               )
             : const LinearGradient(

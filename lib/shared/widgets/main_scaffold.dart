@@ -25,7 +25,7 @@ class MainScaffold extends StatelessWidget {
                 colors: [
                   Color(0xFF0F172A), // Slate 900
                   Color(0xFF1E1B4B), // Indigo 950
-                  Color(0xFF000000), // Black
+                  Color(0xFF131433), // Koyu lacivert (saf siyah çukur yapma)
                 ],
               )
             : const LinearGradient(

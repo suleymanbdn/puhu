@@ -67,8 +67,7 @@ class DashboardView extends ConsumerWidget {
         ],
       ),
       body: ListView(
-        padding: EdgeInsets.fromLTRB(
-            16, 8, 16, 140 + MediaQuery.of(context).padding.bottom),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [
           // Sınav countdown — büyük gradient kart (ekranın imza kartı)
           Container(
