@@ -39,7 +39,7 @@ class MainScaffold extends StatelessWidget {
         child: navigationShell,
       ),
       bottomNavigationBar: Padding(
-        padding: const EdgeInsets.only(left: 16, right: 16, bottom: 24, top: 0),
+        padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16, top: 0),
         child: GlassContainer(
           borderRadius: BorderRadius.circular(24),
           color: isDark ? Colors.black : Colors.white,
@@ -48,6 +48,8 @@ class MainScaffold extends StatelessWidget {
           child: NavigationBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
+            // Default 80 çok yüksek — buğulu bar ekranı yiyordu.
+            height: 60,
             indicatorColor: theme.colorScheme.primary.withAlpha(50),
             selectedIndex: navigationShell.currentIndex,
             onDestinationSelected: (index) {
