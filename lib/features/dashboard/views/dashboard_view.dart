@@ -8,7 +8,6 @@ import '../../../core/services/feature_gate.dart';
 import '../../../core/services/purchase_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/quick_log_sheet.dart';
-import '../../coach/models/study_plan.dart';
 import '../../coach/providers/coach_provider.dart';
 import '../../exam/providers/exam_profile_provider.dart';
 import '../../mistakes/providers/mistake_provider.dart';
@@ -16,6 +15,8 @@ import '../../questions/providers/question_log_provider.dart';
 import '../../streak/providers/streak_freeze_provider.dart';
 import '../../streak/providers/streak_provider.dart';
 import '../../timer/providers/focus_provider.dart';
+import '../../../shared/widgets/puhu_avatar.dart';
+import '../../../shared/widgets/speech_bubble.dart';
 import '../../whats_new/views/whats_new_sheet.dart';
 
 /// Anasayfa
@@ -693,32 +694,6 @@ class _MistakeBucketCard extends ConsumerWidget {
 class _CoachTodayCard extends ConsumerWidget {
   const _CoachTodayCard();
 
-  Color _color(TodayRecommendation r) {
-    switch (r.kind) {
-      case RecommendationKind.reviewMistakes:
-        return AppColors.danger;
-      case RecommendationKind.startStreak:
-        return AppColors.streak;
-      case RecommendationKind.focusWeakest:
-        return AppColors.focus;
-      case RecommendationKind.maintain:
-        return AppColors.success;
-    }
-  }
-
-  IconData _icon(TodayRecommendation r) {
-    switch (r.kind) {
-      case RecommendationKind.reviewMistakes:
-        return Icons.replay_circle_filled_rounded;
-      case RecommendationKind.startStreak:
-        return Icons.local_fire_department_rounded;
-      case RecommendationKind.focusWeakest:
-        return Icons.center_focus_strong_rounded;
-      case RecommendationKind.maintain:
-        return Icons.verified_rounded;
-    }
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final rec = ref.watch(todayRecommendationProvider);
@@ -739,55 +714,28 @@ class _CoachTodayCard extends ConsumerWidget {
       );
     }
 
-    final color = _color(rec);
     final colorScheme = Theme.of(context).colorScheme;
-    // Nötr yüzey + renkli ikon rozeti — dev gradient banner yerine sakin
-    // satır. Renk yalnızca öneri türünü işaret eder.
+    // Puhu maskotu önerisini konuşma balonuyla söyler — AI asistan
+    // uygulamanın görünür yüzü (Duolingo'nun Duo'su gibi).
     return Material(
       color: colorScheme.surface,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () => context.push(rec.actionRoute),
-        onLongPress: () => context.push('/coach'),
+        onTap: () => context.push('/coach'),
         child: Padding(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.fromLTRB(10, 12, 12, 12),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Container(
-                padding: const EdgeInsets.all(9),
-                decoration: BoxDecoration(
-                  color: AppColors.subtleOf(color),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(_icon(rec), color: color, size: 22),
-              ),
-              const SizedBox(width: 12),
+              const PuhuAvatar(size: 64),
+              const SizedBox(width: 4),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Koç önerisi',
-                      style: textTheme.labelSmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      rec.title,
-                      style: textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        height: 1.15,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+                child: SpeechBubble(
+                  text: rec.title,
+                  animate: false,
                 ),
               ),
-              Icon(Icons.chevron_right_rounded,
-                  color: colorScheme.onSurfaceVariant),
             ],
           ),
         ),

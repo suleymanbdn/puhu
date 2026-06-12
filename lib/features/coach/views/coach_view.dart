@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/app_background.dart';
+import '../../../shared/widgets/puhu_avatar.dart';
+import '../../../shared/widgets/speech_bubble.dart';
 import '../../subjects/models/subject.dart';
 import '../models/study_plan.dart';
 import '../providers/ai_provider.dart';
@@ -43,7 +45,7 @@ class CoachView extends ConsumerWidget {
         child: Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const Text('Koç'),
+        title: const Text('Puhu'),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16),
@@ -71,6 +73,10 @@ class CoachView extends ConsumerWidget {
         padding: EdgeInsets.fromLTRB(
             16, 8, 16, 140 + MediaQuery.of(context).padding.bottom),
         children: [
+          // === Puhu asistan — maskot + konuşma balonu + soru çipleri ===
+          _PuhuHeader(report: report, subjectFor: _subjectFromId),
+          const SizedBox(height: 20),
+
           // === Bugün önerisi hero ===
           _TodayHero(
             recommendation: report.todayRecommendation,
@@ -132,34 +138,41 @@ class CoachView extends ConsumerWidget {
                 ),
           ],
 
-          const SizedBox(height: 20),
-
-          // === AI Koç Notu — opsiyonel (BYOK gerekli) ===
-          _AiCoachNoteSection(report: report, subjectFor: _subjectFromId),
         ],
       ),
     ));
   }
 }
 
-/// AI tarafından üretilen koç notu kartı. Key yoksa "Settings'ten bağla"
-/// promo gösterir; key varsa "Üret" butonu + sonuç metni.
-class _AiCoachNoteSection extends ConsumerStatefulWidget {
-  const _AiCoachNoteSection({required this.report, required this.subjectFor});
+/// Puhu asistan başlığı — maskot, konuşma balonu ve hazır soru çipleri.
+///
+/// AI notu balonda typewriter ile akar; maskota dokununca espri yapar.
+class _PuhuHeader extends ConsumerStatefulWidget {
+  const _PuhuHeader({required this.report, required this.subjectFor});
   final CoachReport report;
   final Subject? Function(String) subjectFor;
 
   @override
-  ConsumerState<_AiCoachNoteSection> createState() =>
-      _AiCoachNoteSectionState();
+  ConsumerState<_PuhuHeader> createState() => _PuhuHeaderState();
 }
 
-class _AiCoachNoteSectionState extends ConsumerState<_AiCoachNoteSection> {
-  String? _note;
+class _PuhuHeaderState extends ConsumerState<_PuhuHeader> {
+  String? _bubbleText;
+  bool _animateBubble = false;
   bool _loading = false;
-  String? _error;
 
-  String _buildContext() {
+  static const _greeting =
+      'Hoo! Ben Puhu 🦉 Sana özel bir not için aşağıdaki çiplerden birine dokun.';
+
+  static const _jokes = [
+    'Hoo hoo! Çalışıyor muyuz, kaytarıyor muyuz? 👀',
+    'Baykuşlar gece uçar — sen her saat net uçurursun! 🚀',
+    'Bir soru daha çözersen kanat çırpacağım, söz!',
+    'Gözlerim büyük ama hedeflerin daha büyük 🎯',
+    'Şşşt... YKS\'ye az kaldı, ama panik baykuşlara yakışmaz 😎',
+  ];
+
+  String _buildContext(String style) {
     final weakest = widget.report.weakestSubjectIds
         .map((id) => widget.subjectFor(id)?.title ?? id)
         .join(', ');
@@ -167,29 +180,36 @@ class _AiCoachNoteSectionState extends ConsumerState<_AiCoachNoteSection> {
         .map((id) => widget.subjectFor(id)?.title ?? id)
         .join(', ');
     final today = widget.report.todayRecommendation;
-    return '''
+    return """
 En zayıf 3 ders: $weakest.
 En güçlü 3 ders: $strongest.
 Bugünkü öneri: ${today.title}.
-Bugün üretilecek mesaj: kullanıcıya bu durumu özetleyen, motive edici,
-samimi 2-3 cümle.
-''';
+İstenen tarz: $style
+""";
   }
 
-  Future<void> _generate() async {
+  Future<void> _ask(String style) async {
     setState(() {
       _loading = true;
-      _error = null;
+      _bubbleText = 'Hmm, düşünüyorum... 🤔';
+      _animateBubble = false;
     });
     final summarizer = ref.read(aiSummarizerProvider);
-    final result = await summarizer.generateCoachNote(_buildContext());
+    final result = await summarizer.generateCoachNote(_buildContext(style));
     if (!mounted) return;
     setState(() {
       _loading = false;
-      _note = result;
-      if (result == null) {
-        _error = 'Üretim başarısız — key geçerli mi, internet var mı?';
-      }
+      _animateBubble = true;
+      _bubbleText = result ??
+          'Şu an cevap üretemedim — internetini kontrol edip tekrar dener misin?';
+    });
+  }
+
+  void _tellJoke() {
+    setState(() {
+      _animateBubble = true;
+      _bubbleText =
+          _jokes[DateTime.now().millisecondsSinceEpoch % _jokes.length];
     });
   }
 
@@ -200,171 +220,72 @@ samimi 2-3 cümle.
     final summarizer = ref.watch(aiSummarizerProvider);
     final isAvailable = summarizer.isAvailable;
     final remaining = ref.watch(aiRemainingTodayProvider);
-    final isBundledExhausted = isAvailable && remaining == 0;
+    final exhausted = isAvailable && remaining == 0;
 
-    if (!isAvailable) {
-      // Promo: key yoksa
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.subtleOf(AppColors.focus),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.softOf(AppColors.focus)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.auto_awesome_rounded,
-                    color: AppColors.focus, size: 22),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'AI koç notu (ücretsiz)',
-                    style: textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.focus,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Kendi ücretsiz Gemini key\'ini Ayarlar > Yapay Zeka\'dan '
-              'bağlarsan, koç bugünkü durumun için kişisel bir not üretir. '
-              'Key cihazında kalır.',
-              style: textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.tonalIcon(
-                icon: const Icon(Icons.settings_outlined),
-                label: const Text('Ayarlardan bağla'),
-                onPressed: () =>
-                    GoRouter.of(context).push('/settings'),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
+    final bubble = _bubbleText ??
+        (!isAvailable
+            ? 'Hoo! AI tarafım şu an kapalı — ama algoritmik önerilerim aşağıda 👇'
+            : (exhausted
+                ? 'Bugünlük konuşma hakkım doldu 🌙 Yarın yine buradayım!'
+                : _greeting));
 
-    // Key var
+    final chips = <(String, String)>[
+      ('✨ Günün notu', 'motive edici günlük durum özeti'),
+      ('💪 Motivasyon', 'kısa, güçlü bir motivasyon konuşması'),
+      ('📚 Ne çalışayım?', 'bugün hangi derse, nasıl çalışmalı — somut öneri'),
+    ];
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(12, 16, 12, 14),
       decoration: BoxDecoration(
         color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.softOf(AppColors.focus)),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Icon(Icons.auto_awesome_rounded,
-                  color: AppColors.focus, size: 22),
-              const SizedBox(width: 8),
+              PuhuAvatar(size: 92, onTap: _tellJoke),
+              const SizedBox(width: 6),
               Expanded(
-                child: Text(
-                  'AI Koç Notu',
-                  style: textTheme.titleSmall
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                child: SpeechBubble(
+                  text: bubble,
+                  animate: _animateBubble,
                 ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    summarizer.providerName,
-                    style: textTheme.labelSmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  if (remaining >= 0)
-                    Text(
-                      'Bugün $remaining hak',
-                      style: textTheme.labelSmall?.copyWith(
-                        color: isBundledExhausted
-                            ? AppColors.danger
-                            : AppColors.focus,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                ],
               ),
             ],
           ),
           const SizedBox(height: 12),
-          if (_loading)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
-              child: Center(
-                  child:
-                      CircularProgressIndicator(strokeWidth: 2.5)),
-            )
-          else if (_note != null)
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.subtleOf(AppColors.focus),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                _note!,
-                style: textTheme.bodyMedium?.copyWith(height: 1.4),
-              ),
-            )
-          else if (_error != null)
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.subtleOf(AppColors.danger),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                _error!,
-                style: textTheme.bodySmall?.copyWith(
-                  color: AppColors.danger,
-                ),
-              ),
-            )
-          else
+          if (isAvailable && !exhausted)
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final (label, style) in chips)
+                  ActionChip(
+                    label: Text(label),
+                    labelStyle: textTheme.labelMedium?.copyWith(
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    backgroundColor: colorScheme.primary.withAlpha(22),
+                    side: BorderSide(
+                        color: colorScheme.primary.withAlpha(70)),
+                    onPressed: _loading ? null : () => _ask(style),
+                  ),
+              ],
+            ),
+          if (isAvailable && remaining >= 0) ...[
+            const SizedBox(height: 8),
             Text(
-              'Bugünün durumu için sana özel bir motivasyon notu üret.',
-              style: textTheme.bodySmall?.copyWith(
+              'Bugün $remaining konuşma hakkı • cevaplar 24 saat hatırlanır',
+              style: textTheme.labelSmall?.copyWith(
                 color: colorScheme.onSurfaceVariant,
               ),
             ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              icon: Icon(_note == null
-                  ? Icons.auto_awesome_rounded
-                  : Icons.refresh_rounded),
-              label: Text(isBundledExhausted
-                  ? 'Bugünkü hak doldu — yarın yeniden'
-                  : (_note == null ? 'Not üret' : 'Yeniden üret')),
-              onPressed: (_loading || isBundledExhausted) ? null : _generate,
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.focus,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Cevap 24 saat cihazında cache\'lenir — gereksiz çağrı yapmaz.',
-            style: textTheme.labelSmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
+          ],
         ],
       ),
     );

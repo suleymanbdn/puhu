@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../shared/widgets/puhu_avatar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/services/notification_service.dart';
@@ -154,34 +156,8 @@ class _FocusCompletionDialogState extends ConsumerState<FocusCompletionDialog>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Başarı ikonu
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      widget.focusType.color,
-                      widget.focusType.color.withAlpha(180),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: widget.focusType.color.withAlpha(100),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.celebration,
-                  color: Colors.white,
-                  size: 40,
-                ),
-              ),
+              // Puhu kutluyor 🦉
+              const PuhuAvatar(size: 96, celebrate: true),
               const SizedBox(height: 20),
 
               // Başlık
