@@ -18,7 +18,8 @@ class TimerModeSelector extends ConsumerWidget {
       margin: const EdgeInsets.symmetric(horizontal: 8),
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withAlpha(100),
+        // Primary tonu — gri şerit koyu gradient'in canlılığını öldürüyordu.
+        color: colorScheme.primary.withAlpha(28),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(

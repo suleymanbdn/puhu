@@ -79,8 +79,9 @@ class TimerDisplay extends StatelessWidget {
                 painter: _CircularProgressPainter(
                   progress: timerState.progress,
                   color: timerState.focusType.color,
+                  // Tip renginde soluk halka — gri halka cansız duruyordu.
                   backgroundColor:
-                      colorScheme.outlineVariant.withAlpha(80),
+                      timerState.focusType.color.withAlpha(50),
                   strokeWidth: 12,
                 ),
               ),
@@ -134,7 +135,7 @@ class TimerDisplay extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: timerState.focusType.color.withAlpha(20),
+                      color: timerState.focusType.color.withAlpha(38),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
