@@ -21,6 +21,9 @@ class AppTheme {
   // Dark palette - VIBRANT & NEON
   static const Color _primaryD = Color(0xFF00F0FF); // Neon Cyan
   static const Color _bgD = Color(0xFF050511); // Deep dark blue/black
+  /// Bottom sheet'ler için OPAK koyu yüzey — _surfaceD2 transparent olduğu
+  /// için sheet'lerde kullanılamaz (arka içerik içinden görünür).
+  static const Color _sheetD = Color(0xFF12132A);
   static const Color _surfaceD = Colors.transparent; // For glassmorphism
   static const Color _surfaceD2 = Colors.transparent; // For glassmorphism
   static const Color _onSurfaceD = Color(0xFFF8FAFC);
@@ -196,6 +199,7 @@ class AppTheme {
       ),
       bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: _surfaceL,
+        modalBackgroundColor: _surfaceL,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -346,7 +350,8 @@ class AppTheme {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       ),
       bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: _surfaceD2,
+        backgroundColor: _sheetD,
+        modalBackgroundColor: _sheetD,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),

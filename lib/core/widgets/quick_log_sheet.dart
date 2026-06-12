@@ -22,7 +22,6 @@ Future<void> showQuickLogSheet(BuildContext context) async {
     isScrollControlled: true,
     // Root navigator: alt tab bar'ın üzerinde açıl (buton erişimi için).
     useRootNavigator: true,
-    backgroundColor: Theme.of(context).colorScheme.surface,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
     ),
