@@ -1,5 +1,3 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -468,26 +466,11 @@ class _SubjectScoreTile extends StatelessWidget {
                       ?.copyWith(fontWeight: FontWeight.w700),
                 ),
               ),
-              Text(
-                '${score.totalScore.toStringAsFixed(0)}/100',
-                style: textTheme.titleMedium?.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
+              // Kafa karıştıran "X/100" yerine net etiket: öncelik mi, güçlü mü.
+              _PriorityPill(emphasis: emphasis),
             ],
           ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: (score.totalScore / 100).clamp(0.0, 1.0),
-              backgroundColor: AppColors.subtleOf(color),
-              valueColor: AlwaysStoppedAnimation(color),
-              minHeight: 6,
-            ),
-          ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           // Mini breakdown
           Wrap(
             spacing: 8,
@@ -508,6 +491,43 @@ class _SubjectScoreTile extends StatelessWidget {
                   color: AppColors.danger,
                 ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Ders kartı sağ etiketi — "Öncelikli" (zayıf) ya da "Güçlü".
+class _PriorityPill extends StatelessWidget {
+  const _PriorityPill({required this.emphasis});
+  final bool emphasis;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = emphasis ? AppColors.danger : AppColors.success;
+    final label = emphasis ? 'Öncelikli' : 'Güçlü';
+    final icon =
+        emphasis ? Icons.trending_up_rounded : Icons.check_circle_rounded;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppColors.subtleOf(color),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 14),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ],
       ),
@@ -598,52 +618,80 @@ class _WeeklyPlanSection extends ConsumerWidget {
       );
     }
 
-    // Ücretsiz: gerçek ızgara bulanık, üstte kilit + yükseltme.
+    // Ücretsiz: temiz, kasıtlı premium teaser (blur smear değil).
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         header,
         const SizedBox(height: 8),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: Stack(
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppColors.subtleOf(AppColors.premium),
+                colorScheme.surface,
+              ],
+            ),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: AppColors.softOf(AppColors.premium)),
+          ),
+          child: Column(
             children: [
-              ImageFiltered(
-                imageFilter: ui.ImageFilter.blur(sigmaX: 7, sigmaY: 7),
-                child: _WeeklyPlanGrid(plan: plan, subjectFor: subjectFor),
-              ),
-              Positioned.fill(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: colorScheme.surface.withAlpha(170),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 24, vertical: 20),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+              // Programı çağrıştıran sade iskelet satırlar (gün + bloklar).
+              for (final day in const ['Pzt', 'Sal', 'Çar'])
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Row(
                     children: [
-                      const Icon(Icons.lock_rounded,
-                          color: AppColors.premium, size: 28),
-                      const SizedBox(height: 8),
-                      Text(
-                        'AI koçun haftalık programını sana özel kuruyor',
-                        textAlign: TextAlign.center,
-                        style: textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: colorScheme.onSurface,
+                      SizedBox(
+                        width: 30,
+                        child: Text(
+                          day,
+                          style: textTheme.labelSmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      FilledButton.icon(
-                        onPressed: () => showPaywall(
-                          context,
-                          feature: PremiumFeature.aiWeeklyPlan,
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: _SkeletonBar(
+                          color: AppColors.premium,
+                          widthFactor: 1,
                         ),
-                        icon: const Icon(Icons.workspace_premium_rounded),
-                        label: const Text('Puhu+ ile aç'),
                       ),
+                      const SizedBox(width: 8),
+                      const _SkeletonBar(color: AppColors.focus, width: 48),
                     ],
+                  ),
+                ),
+              const SizedBox(height: 8),
+              const Icon(Icons.lock_rounded,
+                  color: AppColors.premium, size: 26),
+              const SizedBox(height: 8),
+              Text(
+                'AI koçun zayıf derslerine göre haftalık programını kurar',
+                textAlign: TextAlign.center,
+                style: textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 14),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () => showPaywall(
+                    context,
+                    feature: PremiumFeature.aiWeeklyPlan,
+                  ),
+                  icon: const Icon(Icons.workspace_premium_rounded),
+                  label: const Text('Puhu+ ile aç'),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                 ),
               ),
@@ -652,6 +700,30 @@ class _WeeklyPlanSection extends ConsumerWidget {
         ),
       ],
     );
+  }
+}
+
+/// Kilitli plan önizlemesi için sade iskelet çubuğu (blur yerine kasıtlı).
+class _SkeletonBar extends StatelessWidget {
+  const _SkeletonBar({required this.color, this.width, this.widthFactor});
+  final Color color;
+  final double? width;
+  final double? widthFactor;
+
+  @override
+  Widget build(BuildContext context) {
+    final bar = Container(
+      width: width,
+      height: 12,
+      decoration: BoxDecoration(
+        color: AppColors.softOf(color),
+        borderRadius: BorderRadius.circular(6),
+      ),
+    );
+    if (widthFactor != null) {
+      return FractionallySizedBox(widthFactor: widthFactor, child: bar);
+    }
+    return bar;
   }
 }
 
