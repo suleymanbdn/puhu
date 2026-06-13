@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../features/calendar/views/calendar_view.dart';
 import '../../features/coach/views/coach_view.dart';
 import '../../features/dashboard/views/dashboard_view.dart';
 import '../../features/exam/providers/exam_profile_provider.dart';
@@ -25,7 +24,6 @@ class AppRoutes {
   static const String onboarding = '/onboarding';
   static const String home = '/home';
   static const String subjects = '/subjects';
-  static const String calendar = '/calendar';
   static const String timer = '/timer';
   static const String questions = '/questions';
   static const String stats = '/stats';
@@ -35,8 +33,6 @@ class AppRoutes {
   static const String mistakes = '/mistakes';
   static const String mistakeReview = '/mistakes/review';
   static const String coach = '/coach';
-  // Eski path - geriye dönük uyumluluk
-  static const String tasks = '/tasks';
 }
 
 /// Router provider — uygulamanın tek router kaynağı
@@ -51,9 +47,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         return AppRoutes.onboarding;
       }
       if (profile != null && isOnboarding) {
-        return AppRoutes.home;
-      }
-      if (state.matchedLocation == AppRoutes.tasks) {
         return AppRoutes.home;
       }
       return null;
@@ -86,11 +79,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.paywall,
         name: 'paywall',
         builder: (context, state) => const PaywallView(),
-      ),
-      GoRoute(
-        path: AppRoutes.calendar,
-        name: 'calendar',
-        builder: (context, state) => const CalendarView(),
       ),
       GoRoute(
         path: AppRoutes.mistakes,

@@ -14,7 +14,6 @@ class AppConstants {
       'https://play.google.com/store/apps/details?id=$androidApplicationId';
 
   // Hive Box İsimleri
-  static const String tasksBox = 'tasks_box';
   static const String settingsBox = 'settings_box';
   static const String focusSessionsBox = 'focus_sessions_box';
   static const String timeBudgetsBox = 'time_budgets_box';

@@ -80,8 +80,7 @@ class _FocusCompletionDialogState extends ConsumerState<FocusCompletionDialog>
     final timerState = ref.read(focusTimerProvider);
     final subjectId = timerState.subjectId;
     final topicId = timerState.topicId;
-    // Subject seçilmediyse fallback olarak eski category sistemini kullan
-    final budgetKey = subjectId ?? timerState.category?.title;
+    final budgetKey = subjectId;
 
     try {
       final session = await ref.read(focusTimerProvider.notifier).completeSession(

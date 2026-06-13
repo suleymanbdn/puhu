@@ -11,7 +11,6 @@ import '../../exam/providers/exam_profile_provider.dart';
 import '../../subjects/models/subject.dart';
 import '../models/focus_session.dart';
 import '../models/time_budget.dart';
-import '../../tasks/models/task_enums.dart';
 
 // =============================================================================
 // FOCUS TIMER STATE
@@ -26,8 +25,6 @@ class FocusTimerState {
   final FocusType focusType;
   final int totalSeconds;
   final int remainingSeconds;
-  final String? linkedTaskId;
-  final TaskCategory? category;
   final String? subjectId;
   final String? topicId;
   final DateTime? startTime;
@@ -37,8 +34,6 @@ class FocusTimerState {
     this.focusType = FocusType.work,
     this.totalSeconds = 25 * 60,
     this.remainingSeconds = 25 * 60,
-    this.linkedTaskId,
-    this.category,
     this.subjectId,
     this.topicId,
     this.startTime,
@@ -49,8 +44,6 @@ class FocusTimerState {
     FocusType? focusType,
     int? totalSeconds,
     int? remainingSeconds,
-    String? linkedTaskId,
-    TaskCategory? category,
     String? subjectId,
     String? topicId,
     DateTime? startTime,
@@ -62,8 +55,6 @@ class FocusTimerState {
       focusType: focusType ?? this.focusType,
       totalSeconds: totalSeconds ?? this.totalSeconds,
       remainingSeconds: remainingSeconds ?? this.remainingSeconds,
-      linkedTaskId: linkedTaskId ?? this.linkedTaskId,
-      category: category ?? this.category,
       subjectId: clearSubject ? null : (subjectId ?? this.subjectId),
       topicId: clearTopic ? null : (topicId ?? this.topicId),
       startTime: startTime ?? this.startTime,
@@ -203,19 +194,6 @@ class FocusTimerNotifier extends StateNotifier<FocusTimerState> {
     );
   }
 
-  /// Görev bağla
-  void linkTask(String taskId, TaskCategory category) {
-    state = state.copyWith(
-      linkedTaskId: taskId,
-      category: category,
-    );
-  }
-
-  /// Kategori seç
-  void setCategory(TaskCategory category) {
-    state = state.copyWith(category: category);
-  }
-
   /// YKS dersi seç
   void setSubject(String? subjectId) {
     state = state.copyWith(
@@ -242,9 +220,8 @@ class FocusTimerNotifier extends StateNotifier<FocusTimerState> {
       mood: mood,
       startTime: state.startTime ?? DateTime.now(),
       endTime: DateTime.now(),
-      taskId: state.linkedTaskId,
-      // YKS pivot: categoryName önce subjectId, yoksa eski category.title
-      categoryName: state.subjectId ?? state.category?.title,
+      // YKS pivot: çalışma artık derslere (subjectId) bağlı.
+      categoryName: state.subjectId,
       note: note,
     );
 

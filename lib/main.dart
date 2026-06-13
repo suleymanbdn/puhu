@@ -19,8 +19,6 @@ import 'features/questions/models/question_log.dart';
 import 'features/subjects/models/topic.dart';
 import 'features/update/providers/store_update_provider.dart';
 import 'features/update/views/update_prompt_page.dart';
-import 'features/tasks/models/task_model.dart';
-import 'features/tasks/models/task_enums.dart';
 import 'features/timer/models/focus_session.dart';
 import 'features/timer/models/time_budget.dart';
 
@@ -90,12 +88,9 @@ Future<void> _initHive() async {
   await Hive.initFlutter();
 
   // Adapter'ları kaydet (zaten kayıtlıysa hata vermez)
+  // NOT: typeId 0/1/2 eski Task/TaskCategory/TaskPriority'ye aitti (kaldırıldı).
+  // Bu id'ler tekrar KULLANILMAMALI — eski kullanıcı verisiyle çakışır.
   try {
-    // Task adapter'ları
-    if (!Hive.isAdapterRegistered(0)) Hive.registerAdapter(TaskAdapter());
-    if (!Hive.isAdapterRegistered(1)) Hive.registerAdapter(TaskCategoryAdapter());
-    if (!Hive.isAdapterRegistered(2)) Hive.registerAdapter(TaskPriorityAdapter());
-
     // Focus session adapter'ları
     if (!Hive.isAdapterRegistered(3)) Hive.registerAdapter(FocusMoodAdapter());
     if (!Hive.isAdapterRegistered(4)) Hive.registerAdapter(FocusTypeAdapter());
@@ -118,7 +113,6 @@ Future<void> _initHive() async {
 
   // Box'ları paralel olarak aç (daha hızlı)
   await Future.wait([
-    Hive.openBox<Task>(AppConstants.tasksBox),
     Hive.openBox<FocusSession>(AppConstants.focusSessionsBox),
     Hive.openBox<TimeBudget>(AppConstants.timeBudgetsBox),
     Hive.openBox<Topic>(AppConstants.topicsBox),
