@@ -6,6 +6,10 @@
 	<true/>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSCameraUsageDescription</key>
+	<string>Yanlış yaptığın soruların fotoğrafını çekip Hata Sepeti'ne eklemen için kamera erişimi gerekiyor.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Hata Sepeti'ne soru fotoğrafı eklemek için galerine erişim gerekiyor.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>tr</string>
 	<key>CFBundleLocalizations</key>

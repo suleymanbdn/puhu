@@ -15,6 +15,7 @@ class Mistake {
     this.topicId,
     required this.title,
     this.note,
+    this.imagePath,
     required this.addedAt,
     this.lastReviewedAt,
     this.intervalIndex = 0,
@@ -43,6 +44,10 @@ class Mistake {
 
   /// Detay açıklama / hata notu (opsiyonel).
   final String? note;
+
+  /// Yanlış sorunun fotoğrafı — kalıcı dosya yolu (opsiyonel).
+  /// Tekrar oturumunda "soru" olarak gösterilir; AI yok, sadece görsel.
+  final String? imagePath;
 
   /// Hatanın sepete eklendiği zaman.
   final DateTime addedAt;
@@ -123,6 +128,7 @@ class Mistake {
         topicId: topicId,
         title: title ?? this.title,
         note: note ?? this.note,
+        imagePath: imagePath,
         addedAt: addedAt,
         lastReviewedAt: lastReviewedAt ?? this.lastReviewedAt,
         intervalIndex: intervalIndex ?? this.intervalIndex,
@@ -137,6 +143,7 @@ class Mistake {
         'topicId': topicId,
         'title': title,
         'note': note,
+        'imagePath': imagePath,
         'addedAt': addedAt.toIso8601String(),
         'lastReviewedAt': lastReviewedAt?.toIso8601String(),
         'intervalIndex': intervalIndex,
@@ -151,6 +158,7 @@ class Mistake {
         topicId: j['topicId'] as String?,
         title: j['title'] as String,
         note: j['note'] as String?,
+        imagePath: j['imagePath'] as String?,
         addedAt: DateTime.parse(j['addedAt'] as String),
         lastReviewedAt: j['lastReviewedAt'] == null
             ? null

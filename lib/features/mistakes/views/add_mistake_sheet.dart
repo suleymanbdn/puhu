@@ -1,12 +1,16 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../exam/models/exam_profile.dart';
 import '../../exam/providers/exam_profile_provider.dart';
 import '../../subjects/models/subject.dart';
 import '../providers/mistake_provider.dart';
+import '../services/mistake_image_service.dart';
 
 /// Hata Sepeti'ne yeni hata eklemek için bottom sheet.
 Future<bool> showAddMistakeSheet(BuildContext context, {Subject? prefilled}) async {
@@ -38,7 +42,20 @@ class _AddMistakeSheetState extends ConsumerState<_AddMistakeSheet> {
   Subject? _selected;
   final _titleCtl = TextEditingController();
   final _noteCtl = TextEditingController();
+  String? _imagePath;
   bool _saving = false;
+  bool _picking = false;
+
+  Future<void> _pickImage(ImageSource source) async {
+    if (_picking) return;
+    setState(() => _picking = true);
+    try {
+      final path = await pickMistakeImage(source);
+      if (path != null && mounted) setState(() => _imagePath = path);
+    } finally {
+      if (mounted) setState(() => _picking = false);
+    }
+  }
 
   @override
   void initState() {
@@ -70,8 +87,13 @@ class _AddMistakeSheetState extends ConsumerState<_AddMistakeSheet> {
 
   Future<void> _save() async {
     final subject = _selected;
-    final title = _titleCtl.text.trim();
-    if (subject == null || title.isEmpty) return;
+    if (subject == null) return;
+    var title = _titleCtl.text.trim();
+    // Foto eklendiyse başlık zorunlu değil — soru fotoğrafı zaten içeriği taşır.
+    if (title.isEmpty) {
+      if (_imagePath == null) return;
+      title = '${subject.title} sorusu';
+    }
     setState(() => _saving = true);
     final navigator = Navigator.of(context);
     try {
@@ -79,6 +101,7 @@ class _AddMistakeSheetState extends ConsumerState<_AddMistakeSheet> {
             subjectId: subject.id,
             title: title,
             note: _noteCtl.text.trim().isEmpty ? null : _noteCtl.text.trim(),
+            imagePath: _imagePath,
           );
       HapticFeedback.lightImpact();
       if (mounted) navigator.pop(true);
@@ -95,7 +118,9 @@ class _AddMistakeSheetState extends ConsumerState<_AddMistakeSheet> {
     if (profile == null) return const SizedBox.shrink();
 
     final subjects = Subject.forExamType(_filter(profile.examType));
-    final canSave = _selected != null && _titleCtl.text.trim().isNotEmpty;
+    // Ders seçili + (başlık girilmiş VEYA soru fotoğrafı eklenmiş).
+    final canSave = _selected != null &&
+        (_titleCtl.text.trim().isNotEmpty || _imagePath != null);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
@@ -128,8 +153,8 @@ class _AddMistakeSheetState extends ConsumerState<_AddMistakeSheet> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Yaptığın yanlışı kısaca yaz — birkaç gün sonra tekrar görür, '
-            'kalıcılaştırırsın.',
+            'Yanlış sorunun fotoğrafını çek ya da kısaca yaz — birkaç gün sonra '
+            'tekrar görür, kalıcılaştırırsın.',
             style: textTheme.bodySmall?.copyWith(
               color: colorScheme.onSurfaceVariant,
             ),
@@ -197,13 +222,70 @@ class _AddMistakeSheetState extends ConsumerState<_AddMistakeSheet> {
               ),
             ),
           ),
+          const SizedBox(height: 16),
+
+          // Soru fotoğrafı — eklenirse tekrarda "soru" olarak gösterilir.
+          if (_imagePath != null)
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: Image.file(
+                    File(_imagePath!),
+                    width: double.infinity,
+                    height: 160,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                Positioned(
+                  top: 6,
+                  right: 6,
+                  child: Material(
+                    color: Colors.black54,
+                    shape: const CircleBorder(),
+                    child: IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      iconSize: 20,
+                      tooltip: 'Fotoğrafı kaldır',
+                      onPressed: () {
+                        final old = _imagePath;
+                        setState(() => _imagePath = null);
+                        deleteMistakeImage(old);
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            )
+          else
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.photo_camera_rounded),
+                    label: const Text('Fotoğraf çek'),
+                    onPressed:
+                        _picking ? null : () => _pickImage(ImageSource.camera),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.photo_library_rounded),
+                    label: const Text('Galeriden'),
+                    onPressed:
+                        _picking ? null : () => _pickImage(ImageSource.gallery),
+                  ),
+                ),
+              ],
+            ),
           const SizedBox(height: 20),
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
               icon: const Icon(Icons.add_rounded),
               label: Text(
-                canSave ? 'Hata sepetine ekle' : 'Ders ve başlık gir',
+                canSave ? 'Hata sepetine ekle' : 'Ders seç + başlık ya da foto',
               ),
               onPressed: (canSave && !_saving) ? _save : null,
               style: FilledButton.styleFrom(

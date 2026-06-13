@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../core/services/settings_provider.dart';
 import '../models/mistake.dart';
+import '../services/mistake_image_service.dart';
 import '../services/mistake_repository.dart';
 
 const _uuid = Uuid();
@@ -57,6 +58,7 @@ class MistakeNotifier extends StateNotifier<List<Mistake>> {
     String? topicId,
     required String title,
     String? note,
+    String? imagePath,
   }) async {
     final m = Mistake(
       id: _uuid.v4(),
@@ -64,6 +66,7 @@ class MistakeNotifier extends StateNotifier<List<Mistake>> {
       topicId: topicId,
       title: title.trim(),
       note: note?.trim().isEmpty == true ? null : note?.trim(),
+      imagePath: imagePath,
       addedAt: DateTime.now(),
     );
     state = [m, ...state];
@@ -91,10 +94,18 @@ class MistakeNotifier extends StateNotifier<List<Mistake>> {
     await _persist();
   }
 
-  /// Hatayı sil.
+  /// Hatayı sil. İlişkili soru fotoğrafı varsa diskten de temizle.
   Future<void> delete(String id) async {
+    String? imagePath;
+    for (final m in state) {
+      if (m.id == id) {
+        imagePath = m.imagePath;
+        break;
+      }
+    }
     state = state.where((m) => m.id != id).toList();
     await _persist();
+    await deleteMistakeImage(imagePath);
   }
 
   /// Mastered işaretle (manuel "öğrenildi").

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import '../../../shared/widgets/app_background.dart';
@@ -59,6 +61,34 @@ class _MistakeReviewViewState extends ConsumerState<MistakeReviewView> {
       _index++;
       _revealed = false;
     });
+  }
+
+  /// Soru fotoğrafını tam ekran, zoom'lanabilir göster.
+  void _showFullImage(BuildContext context, String path) {
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.black,
+      builder: (ctx) => GestureDetector(
+        onTap: () => Navigator.of(ctx).pop(),
+        child: Stack(
+          children: [
+            InteractiveViewer(
+              minScale: 0.8,
+              maxScale: 4,
+              child: Center(child: Image.file(File(path))),
+            ),
+            Positioned(
+              top: MediaQuery.of(ctx).padding.top + 8,
+              right: 12,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                onPressed: () => Navigator.of(ctx).pop(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -191,6 +221,33 @@ class _MistakeReviewViewState extends ConsumerState<MistakeReviewView> {
                             height: 1.3,
                           ),
                         ),
+                        // Soru fotoğrafı — tıklayınca tam ekran/zoom.
+                        if (m.imagePath != null) ...[
+                          const SizedBox(height: 16),
+                          GestureDetector(
+                            onTap: () => _showFullImage(context, m.imagePath!),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  maxHeight: 280,
+                                  minWidth: double.infinity,
+                                ),
+                                child: Image.file(
+                                  File(m.imagePath!),
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Büyütmek için dokun',
+                            style: textTheme.labelSmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
                         if (m.note != null && m.note!.isNotEmpty) ...[
                           const SizedBox(height: 18),
                           AnimatedCrossFade(
