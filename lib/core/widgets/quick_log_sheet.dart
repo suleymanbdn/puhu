@@ -64,7 +64,8 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
     }
   }
 
-  double get _net => (_correct - _wrong / 4).clamp(0, double.infinity);
+  // Net negatif olabilir (çok yanlış, az doğru) — YKS'de gerçek durum.
+  double get _net => _correct - _wrong / 4;
   int get _total => _correct + _wrong + _blank;
 
   Future<void> _save() async {
