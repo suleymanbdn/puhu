@@ -55,3 +55,4 @@ app.*.map.json
 # Secrets — API keys, build configs (NEVER commit)
 .secrets/
 *.secrets.env
+.superpowers/
