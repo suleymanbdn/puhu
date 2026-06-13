@@ -263,8 +263,7 @@ class AlgorithmicCoach {
       return TodayRecommendation(
         kind: RecommendationKind.startStreak,
         title: 'Streak\'i koru — $subjectName ile başla',
-        subtitle:
-            'Bugün hâlâ çalışmadın. 25 dakika bile yeterli; pomodoro\'yu başlat.',
+        subtitle: 'Bugün hâlâ çalışmadın. 25 dakika bile yeterli — hadi başla.',
         minutes: 25,
         actionRoute: '/timer',
         subjectId: topSubject?.subjectId,

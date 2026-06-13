@@ -9,6 +9,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/quick_log_sheet.dart';
 import '../../coach/models/study_plan.dart';
 import '../../coach/providers/coach_provider.dart';
+import '../../coach/widgets/recommendation_starter.dart';
 import '../../exam/models/exam_profile.dart';
 import '../../exam/providers/exam_profile_provider.dart';
 import '../../mistakes/providers/mistake_provider.dart';
@@ -482,9 +483,8 @@ class _TodayHeroCard extends ConsumerWidget {
                 rec.minutes > 0 ? '${rec.minutes} dk başla' : 'Devam et',
                 style: TextStyle(color: color, fontWeight: FontWeight.w800),
               ),
-              // Tab-shell route'larına (/timer, /home) push YAPILMAZ —
-              // Navigator key çakışmasıyla crash olur; go ile geçilir.
-              onPressed: () => GoRouter.of(context).go(rec.actionRoute),
+              // Pomodoro dayatma — kullanıcıya nasıl çalışacağını sor.
+              onPressed: () => startRecommendation(context, rec),
               style: FilledButton.styleFrom(
                 backgroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),

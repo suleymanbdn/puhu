@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/services/feature_gate.dart';
 import '../../../core/services/purchase_service.dart';
@@ -12,6 +11,7 @@ import '../../subjects/models/subject.dart';
 import '../models/study_plan.dart';
 import '../providers/ai_provider.dart';
 import '../providers/coach_provider.dart';
+import '../widgets/recommendation_starter.dart';
 
 const _weekdayShort = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
 
@@ -398,10 +398,8 @@ class _TodayHero extends StatelessWidget {
                   fontWeight: FontWeight.w800,
                 ),
               ),
-              onPressed: () =>
-                  // Tab-shell route'larına (/timer, /home) push YAPILMAZ —
-                  // Navigator key çakışmasıyla crash olur; go ile geçilir.
-                  GoRouter.of(context).go(recommendation.actionRoute),
+              // Pomodoro dayatma — kullanıcıya nasıl çalışacağını sor.
+              onPressed: () => startRecommendation(context, recommendation),
               style: FilledButton.styleFrom(
                 backgroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
