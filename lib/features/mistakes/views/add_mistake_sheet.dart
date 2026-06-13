@@ -285,7 +285,11 @@ class _AddMistakeSheetState extends ConsumerState<_AddMistakeSheet> {
             child: FilledButton.icon(
               icon: const Icon(Icons.add_rounded),
               label: Text(
-                canSave ? 'Hata sepetine ekle' : 'Ders seç + başlık ya da foto',
+                canSave
+                    ? 'Hata sepetine ekle'
+                    : (_selected == null
+                        ? 'Önce bir ders seç'
+                        : 'Başlık yaz ya da foto ekle'),
               ),
               onPressed: (canSave && !_saving) ? _save : null,
               style: FilledButton.styleFrom(
