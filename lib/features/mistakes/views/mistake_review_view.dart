@@ -10,6 +10,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../subjects/models/subject.dart';
 import '../models/mistake.dart';
 import '../providers/mistake_provider.dart';
+import '../services/mistake_image_service.dart';
 
 /// Hata Sepeti tekrar oturumu — bekleyen hataları kart kart gösterir.
 ///
@@ -75,7 +76,15 @@ class _MistakeReviewViewState extends ConsumerState<MistakeReviewView> {
             InteractiveViewer(
               minScale: 0.8,
               maxScale: 4,
-              child: Center(child: Image.file(File(path))),
+              child: Center(
+                child: Image.file(
+                  File(path),
+                  errorBuilder: (_, __, ___) => const Text(
+                    'Fotoğraf bulunamadı',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ),
             ),
             Positioned(
               top: MediaQuery.of(ctx).padding.top + 8,
@@ -222,10 +231,11 @@ class _MistakeReviewViewState extends ConsumerState<MistakeReviewView> {
                           ),
                         ),
                         // Soru fotoğrafı — tıklayınca tam ekran/zoom.
-                        if (m.imagePath != null) ...[
+                        if (MistakeImages.mistakeImagePath(m.imagePath)
+                            case final imgPath?) ...[
                           const SizedBox(height: 16),
                           GestureDetector(
-                            onTap: () => _showFullImage(context, m.imagePath!),
+                            onTap: () => _showFullImage(context, imgPath),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(12),
                               child: ConstrainedBox(
@@ -234,8 +244,14 @@ class _MistakeReviewViewState extends ConsumerState<MistakeReviewView> {
                                   minWidth: double.infinity,
                                 ),
                                 child: Image.file(
-                                  File(m.imagePath!),
+                                  File(imgPath),
                                   fit: BoxFit.contain,
+                                  errorBuilder: (_, __, ___) => Container(
+                                    height: 120,
+                                    alignment: Alignment.center,
+                                    color: colorScheme.surfaceContainerHighest,
+                                    child: const Text('Fotoğraf bulunamadı'),
+                                  ),
                                 ),
                               ),
                             ),

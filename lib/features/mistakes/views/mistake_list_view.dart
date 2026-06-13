@@ -10,6 +10,7 @@ import '../../../shared/widgets/app_background.dart';
 import '../../subjects/models/subject.dart';
 import '../models/mistake.dart';
 import '../providers/mistake_provider.dart';
+import '../services/mistake_image_service.dart';
 import 'add_mistake_sheet.dart';
 
 /// Hata Sepeti ana ekran — bekleyen, gelecek, mastered tab'ları.
@@ -275,18 +276,9 @@ class _MistakeTile extends ConsumerWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (mistake.imagePath != null)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: Image.file(
-                File(mistake.imagePath!),
-                width: 44,
-                height: 44,
-                fit: BoxFit.cover,
-              ),
-            )
-          else
-            Container(
+          Builder(builder: (_) {
+            final imgPath = MistakeImages.mistakeImagePath(mistake.imagePath);
+            final iconBox = Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: AppColors.subtleOf(color),
@@ -294,7 +286,19 @@ class _MistakeTile extends ConsumerWidget {
               ),
               child: Icon(subject?.icon ?? Icons.school_outlined,
                   color: color, size: 20),
-            ),
+            );
+            if (imgPath == null) return iconBox;
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: Image.file(
+                File(imgPath),
+                width: 44,
+                height: 44,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => iconBox,
+              ),
+            );
+          }),
           const SizedBox(width: 12),
           Expanded(
             child: Column(

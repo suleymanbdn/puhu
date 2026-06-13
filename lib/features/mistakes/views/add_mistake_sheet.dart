@@ -231,10 +231,17 @@ class _AddMistakeSheetState extends ConsumerState<_AddMistakeSheet> {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(14),
                   child: Image.file(
-                    File(_imagePath!),
+                    File(MistakeImages.mistakeImagePath(_imagePath)!),
                     width: double.infinity,
                     height: 160,
                     fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      width: double.infinity,
+                      height: 160,
+                      color: colorScheme.surfaceContainerHighest,
+                      alignment: Alignment.center,
+                      child: const Icon(Icons.broken_image_outlined, size: 40),
+                    ),
                   ),
                 ),
                 Positioned(

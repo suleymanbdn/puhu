@@ -14,6 +14,7 @@ import 'core/services/settings_provider.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_provider.dart';
 import 'features/exam/models/exam_profile.dart';
+import 'features/mistakes/services/mistake_image_service.dart';
 import 'features/mocks/models/mock_exam.dart';
 import 'features/questions/models/question_log.dart';
 import 'features/subjects/models/topic.dart';
@@ -31,6 +32,9 @@ void main() async {
 
   // Hive başlatma
   await _initHive();
+
+  // Hata sepeti görsel klasörünü hazırla (kalıcı yol çözümü için).
+  await MistakeImages.init();
 
   // Bildirim servisi başlatma
   await NotificationService.instance.initialize();
