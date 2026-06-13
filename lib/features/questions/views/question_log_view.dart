@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-import '../../exam/models/exam_profile.dart';
+import '../../../core/widgets/quick_log_sheet.dart';
 import '../../exam/providers/exam_profile_provider.dart';
 import '../../subjects/models/subject.dart';
 import '../models/question_log.dart';
@@ -13,21 +12,6 @@ import '../providers/question_log_provider.dart';
 /// Soru çözüm günlüğü ekranı
 class QuestionLogView extends ConsumerWidget {
   const QuestionLogView({super.key});
-
-  ExamTypeFilter _filter(ExamType t) {
-    switch (t) {
-      case ExamType.tyt:
-        return ExamTypeFilter.tyt;
-      case ExamType.sayisal:
-        return ExamTypeFilter.sayisal;
-      case ExamType.esitAgirlik:
-        return ExamTypeFilter.esitAgirlik;
-      case ExamType.sozel:
-        return ExamTypeFilter.sozel;
-      case ExamType.dil:
-        return ExamTypeFilter.dil;
-    }
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -134,8 +118,7 @@ class QuestionLogView extends ConsumerWidget {
                   ),
                   const SizedBox(height: 18),
                   FilledButton.tonalIcon(
-                    onPressed: () => _AddLogSheet.show(context,
-                        examType: _filter(profile.examType)),
+                    onPressed: () => showQuickLogSheet(context),
                     icon: const Icon(Icons.add_chart_rounded),
                     label: const Text('Hemen başla'),
                   ),
@@ -146,15 +129,14 @@ class QuestionLogView extends ConsumerWidget {
             ...logs.map((log) => _LogTile(log: log)),
         ],
       ),
-      // Padding (Transform değil): hit-test alanının görselle aynı yerde
-      // kalması için — Transform.translate'li FAB tıklanamıyordu.
+      // Yüzen cam nav bar'ı (≈ alt 92px) geçecek kadar kaldır — fazlası FAB'ı
+      // ekran ortasına itiyordu. Hit-test için Transform değil Padding.
       floatingActionButton: Padding(
         padding: EdgeInsets.only(
-            bottom: 72 + MediaQuery.of(context).padding.bottom),
+            bottom: 24 + MediaQuery.of(context).padding.bottom),
         child: FloatingActionButton.extended(
           shape: const StadiumBorder(),
-          onPressed: () =>
-              _AddLogSheet.show(context, examType: _filter(profile.examType)),
+          onPressed: () => showQuickLogSheet(context),
           icon: const Icon(Icons.add),
           label: const Text('Soru Ekle'),
         ),
@@ -245,299 +227,6 @@ class _LogTile extends ConsumerWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _AddLogSheet extends ConsumerStatefulWidget {
-  const _AddLogSheet({required this.examType});
-  final ExamTypeFilter examType;
-
-  static Future<void> show(BuildContext context,
-      {required ExamTypeFilter examType}) {
-    return showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      // Root navigator: sheet alt tab bar'ın ÜZERİNDE açılmalı — yoksa
-      // Kaydet butonu tab bar arkasında kalıp erişilemez oluyor.
-      useRootNavigator: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _AddLogSheet(examType: examType),
-    );
-  }
-
-  @override
-  ConsumerState<_AddLogSheet> createState() => _AddLogSheetState();
-}
-
-class _AddLogSheetState extends ConsumerState<_AddLogSheet> {
-  Subject? _subject;
-  int _correct = 0;
-  int _wrong = 0;
-  int _blank = 0;
-  bool _saving = false;
-
-  double get _net => _correct - (_wrong / 4);
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-    final subjects = Subject.forExamType(widget.examType);
-
-    return Container(
-      margin: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: 20,
-          right: 20,
-          top: 20,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: colorScheme.outlineVariant,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text('Soru Çözüm Kaydı',
-                  style: textTheme.titleLarge
-                      ?.copyWith(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
-
-              // Ders seçici
-              Text('Ders',
-                  style: textTheme.labelMedium
-                      ?.copyWith(color: colorScheme.onSurfaceVariant)),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: subjects.map((s) {
-                  final selected = s == _subject;
-                  return InkWell(
-                    onTap: () => setState(() => _subject = s),
-                    borderRadius: BorderRadius.circular(20),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: selected
-                            ? s.color.withAlpha(40)
-                            : Colors.transparent,
-                        border: Border.all(
-                          color: selected ? s.color : colorScheme.outlineVariant,
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(s.icon, size: 16, color: s.color),
-                          const SizedBox(width: 6),
-                          Text(
-                            s.title,
-                            style: textTheme.labelMedium?.copyWith(
-                              color: selected
-                                  ? s.color
-                                  : colorScheme.onSurfaceVariant,
-                              fontWeight: selected
-                                  ? FontWeight.w600
-                                  : FontWeight.normal,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 24),
-
-              // Sayaçlar
-              _Counter(
-                label: 'Doğru',
-                value: _correct,
-                color: const Color(0xFF10B981),
-                onChanged: (v) => setState(() => _correct = v),
-              ),
-              const SizedBox(height: 12),
-              _Counter(
-                label: 'Yanlış',
-                value: _wrong,
-                color: const Color(0xFFEF4444),
-                onChanged: (v) => setState(() => _wrong = v),
-              ),
-              const SizedBox(height: 12),
-              _Counter(
-                label: 'Boş',
-                value: _blank,
-                color: const Color(0xFF6B7280),
-                onChanged: (v) => setState(() => _blank = v),
-              ),
-              const SizedBox(height: 20),
-
-              // Net
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: colorScheme.primary.withAlpha(20),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.calculate_outlined, color: colorScheme.primary),
-                    const SizedBox(width: 12),
-                    Text('Net',
-                        style: textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w600)),
-                    const Spacer(),
-                    Text(
-                      _net.toStringAsFixed(2),
-                      style: textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.primary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: (_subject == null ||
-                          _saving ||
-                          (_correct + _wrong + _blank) == 0)
-                      ? null
-                      : _save,
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: _saving
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text('Kaydet',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          )),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _save() async {
-    if (_subject == null) return;
-    setState(() => _saving = true);
-    try {
-      await ref.read(questionLogProvider.notifier).addLog(
-            subjectId: _subject!.id,
-            correct: _correct,
-            wrong: _wrong,
-            blank: _blank,
-          );
-      HapticFeedback.lightImpact();
-      if (mounted) Navigator.pop(context);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Hata: $e')),
-        );
-        setState(() => _saving = false);
-      }
-    }
-  }
-}
-
-class _Counter extends StatelessWidget {
-  const _Counter({
-    required this.label,
-    required this.value,
-    required this.color,
-    required this.onChanged,
-  });
-
-  final String label;
-  final int value;
-  final Color color;
-  final ValueChanged<int> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withAlpha(15),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 8,
-            height: 32,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Text(label,
-              style: textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w500)),
-          const Spacer(),
-          IconButton(
-            onPressed: value > 0 ? () => onChanged(value - 1) : null,
-            icon: const Icon(Icons.remove_circle_outline),
-            color: colorScheme.onSurfaceVariant,
-          ),
-          SizedBox(
-            width: 40,
-            child: Text(
-              value.toString(),
-              textAlign: TextAlign.center,
-              style: textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-          ),
-          IconButton(
-            onPressed: () => onChanged(value + 1),
-            icon: const Icon(Icons.add_circle_outline),
-            color: color,
-          ),
-        ],
       ),
     );
   }
