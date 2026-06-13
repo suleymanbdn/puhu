@@ -1,7 +1,11 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/services/feature_gate.dart';
+import '../../../core/services/purchase_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/app_background.dart';
 import '../../../shared/widgets/puhu_avatar.dart';
@@ -103,16 +107,8 @@ class CoachView extends ConsumerWidget {
 
           const SizedBox(height: 20),
 
-          // === Haftalık plan ===
-          Text(
-            'Haftalık plan önerisi',
-            style: textTheme.titleSmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          _WeeklyPlanGrid(
+          // === Haftalık plan (Plus'a özel) ===
+          _WeeklyPlanSection(
             plan: report.weeklyPlan,
             subjectFor: _subjectFromId,
           ),
@@ -539,6 +535,158 @@ class _Chip extends StatelessWidget {
           fontSize: 11,
           fontWeight: FontWeight.w700,
         ),
+      ),
+    );
+  }
+}
+
+/// Haftalık plan bölümü — Plus'a özel.
+///
+/// Plus: AI kişisel strateji notu (varsa) + deterministik gün-gün ızgara.
+/// Ücretsiz: bulanık önizleme + "Puhu+ ile aç" yükseltme çağrısı (koçu her gün
+/// hisseden kullanıcı haftanın tamamını görmek için yükseltsin).
+class _WeeklyPlanSection extends ConsumerWidget {
+  const _WeeklyPlanSection({required this.plan, required this.subjectFor});
+
+  final WeeklyPlan plan;
+  final Subject? Function(String) subjectFor;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+    final isPremium = ref.watch(isPremiumProvider);
+
+    final header = Row(
+      children: [
+        Expanded(
+          child: Text(
+            'Haftalık plan',
+            style: textTheme.titleSmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        if (!isPremium)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: AppColors.subtleOf(AppColors.premium),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              'Puhu+',
+              style: textTheme.labelSmall?.copyWith(
+                color: AppColors.premium,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+      ],
+    );
+
+    if (isPremium) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          header,
+          const SizedBox(height: 8),
+          const _WeeklyStrategyNote(),
+          _WeeklyPlanGrid(plan: plan, subjectFor: subjectFor),
+        ],
+      );
+    }
+
+    // Ücretsiz: gerçek ızgara bulanık, üstte kilit + yükseltme.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        header,
+        const SizedBox(height: 8),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Stack(
+            children: [
+              ImageFiltered(
+                imageFilter: ui.ImageFilter.blur(sigmaX: 7, sigmaY: 7),
+                child: _WeeklyPlanGrid(plan: plan, subjectFor: subjectFor),
+              ),
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: colorScheme.surface.withAlpha(170),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 24, vertical: 20),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.lock_rounded,
+                          color: AppColors.premium, size: 28),
+                      const SizedBox(height: 8),
+                      Text(
+                        'AI koçun haftalık programını sana özel kuruyor',
+                        textAlign: TextAlign.center,
+                        style: textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      FilledButton.icon(
+                        onPressed: () => showPaywall(
+                          context,
+                          feature: PremiumFeature.aiWeeklyPlan,
+                        ),
+                        icon: const Icon(Icons.workspace_premium_rounded),
+                        label: const Text('Puhu+ ile aç'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// AI'ın kişiye özel haftalık strateji notu (Plus). Yoksa hiçbir şey göstermez.
+class _WeeklyStrategyNote extends ConsumerWidget {
+  const _WeeklyStrategyNote();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final note = ref.watch(weeklyPlanNoteProvider).asData?.value;
+    if (note == null || note.isEmpty) return const SizedBox.shrink();
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.subtleOf(AppColors.focus),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.softOf(AppColors.focus)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.auto_awesome_rounded,
+              color: AppColors.focus, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              note,
+              style: textTheme.bodyMedium
+                  ?.copyWith(color: colorScheme.onSurface),
+            ),
+          ),
+        ],
       ),
     );
   }

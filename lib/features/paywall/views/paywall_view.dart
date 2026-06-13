@@ -197,7 +197,7 @@ class _PaywallViewState extends ConsumerState<PaywallView> {
         ? 'Abonelikler yüklenemedi'
         : plan.hasTrial
             ? '3 Gün Ücretsiz Dene'
-            : 'Puhu+ Edin';
+            : 'Koçumu Puhu+\'a yükselt';
 
     return Container(
       padding: const EdgeInsets.fromLTRB(

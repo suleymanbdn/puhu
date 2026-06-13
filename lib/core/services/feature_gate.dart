@@ -15,42 +15,39 @@ class FreeLimits {
 }
 
 /// Premium (Puhu+) ile açılan özellikler.
+///
+/// Sıra = paywall'da gösterim sırası. Hero özellik (AI haftalık program) başta.
 enum PremiumFeature {
-  /// Tüm deneme geçmişi + hedef-progres grafikleri.
-  fullMockHistory,
+  /// AI'ın kişiye özel ürettiği haftalık çalışma programı (hero).
+  aiWeeklyPlan,
 
   /// Branş bazlı zayıf konu analizi.
   weakTopicAnalysis,
+
+  /// Tüm deneme geçmişi + hedef-progres grafikleri.
+  fullMockHistory,
 
   /// Gelişmiş istatistik grafikleri.
   advancedCharts,
 
   /// Aylık 5 streak freeze (ücretsizde 2).
   extraStreakFreeze,
-
-  /// Özel temalar ve uygulama ikonları.
-  customThemes,
-
-  /// PDF rapor dışa aktarma.
-  pdfExport,
 }
 
 extension PremiumFeatureInfo on PremiumFeature {
   /// Paywall'da gösterilecek kısa başlık.
   String get title {
     switch (this) {
+      case PremiumFeature.aiWeeklyPlan:
+        return 'Sana özel AI haftalık program';
+      case PremiumFeature.weakTopicAnalysis:
+        return 'Zayıf konularına derin analiz';
       case PremiumFeature.fullMockHistory:
         return 'Tüm deneme geçmişi';
-      case PremiumFeature.weakTopicAnalysis:
-        return 'Zayıf konu analizi';
       case PremiumFeature.advancedCharts:
         return 'Gelişmiş grafikler';
       case PremiumFeature.extraStreakFreeze:
         return 'Ayda 5 streak dondurma';
-      case PremiumFeature.customThemes:
-        return 'Özel tema ve ikonlar';
-      case PremiumFeature.pdfExport:
-        return 'PDF rapor dışa aktarma';
     }
   }
 }
