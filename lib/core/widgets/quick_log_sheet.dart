@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/exam/models/exam_profile.dart';
 import '../../features/exam/providers/exam_profile_provider.dart';
-import '../../features/mistakes/providers/mistake_provider.dart';
 import '../../features/questions/providers/question_log_provider.dart';
 import '../../features/subjects/models/subject.dart';
 import '../theme/app_colors.dart';
@@ -47,7 +46,6 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
   int _wrong = 0;
   int _blank = 0;
   bool _saving = false;
-  bool _addToMistakes = false;
 
   ExamTypeFilter _filter(ExamType t) {
     switch (t) {
@@ -81,24 +79,12 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
             wrong: _wrong,
             blank: _blank,
           );
-      // Kullanıcı isterse yanlışları tek kayıtla hata sepetine de at —
-      // spaced repetition döngüsü manuel ekleme olmadan başlar.
-      if (_addToMistakes && _wrong > 0) {
-        await ref.read(mistakeProvider.notifier).add(
-              subjectId: subject.id,
-              title: '${subject.title} — $_wrong yanlış',
-              note: 'Hızlı kayıttan eklendi. Yanlışlarını gözden geçir.',
-            );
-      }
       if (mounted) {
         navigator.maybePop();
         messenger.showSnackBar(
           SnackBar(
             content: Text(
-              _addToMistakes && _wrong > 0
-                  ? '${subject.title} • ${_net.toStringAsFixed(2)} net '
-                      'kaydedildi + sepete eklendi 📓'
-                  : '${subject.title} • ${_net.toStringAsFixed(2)} net kaydedildi',
+              '${subject.title} • ${_net.toStringAsFixed(2)} net kaydedildi',
             ),
             duration: const Duration(seconds: 2),
           ),
@@ -257,55 +243,30 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
             ),
           if (_total > 0) const SizedBox(height: 14),
 
-          // Yanlış varsa: tek dokunuşla hata sepetine ekleme seçeneği
+          // Yanlış varsa: anlamlı tekrar için soruyu fotoğrafıyla Hata
+          // Sepeti'ne eklemeye yönlendir (boş "X yanlış" sayacı yerine).
           if (_wrong > 0) ...[
-            InkWell(
-              onTap: () => setState(() => _addToMistakes = !_addToMistakes),
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                decoration: BoxDecoration(
-                  color: _addToMistakes
-                      ? AppColors.subtleOf(AppColors.danger)
-                      : colorScheme.onSurface.withAlpha(10),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: _addToMistakes
-                        ? AppColors.softOf(AppColors.danger)
-                        : Colors.transparent,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      _addToMistakes
-                          ? Icons.bookmark_added_rounded
-                          : Icons.bookmark_add_outlined,
-                      size: 20,
-                      color: _addToMistakes
-                          ? AppColors.danger
-                          : colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'Yanlışları Hata Sepetine de ekle',
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: _addToMistakes
-                              ? AppColors.danger
-                              : colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w600,
-                        ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: AppColors.subtleOf(AppColors.danger),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.lightbulb_outline_rounded,
+                      size: 20, color: AppColors.danger),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Yanlış sorularını Hata Sepeti\'ne fotoğraflarıyla '
+                      'ekle — birkaç gün sonra tekrar gör, kalıcılaştır.',
+                      style: textTheme.bodySmall?.copyWith(
+                        color: AppColors.strongOf(AppColors.danger),
                       ),
                     ),
-                    Switch(
-                      value: _addToMistakes,
-                      activeTrackColor: AppColors.danger,
-                      onChanged: (v) => setState(() => _addToMistakes = v),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 14),

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -273,15 +275,26 @@ class _MistakeTile extends ConsumerWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.subtleOf(color),
+          if (mistake.imagePath != null)
+            ClipRRect(
               borderRadius: BorderRadius.circular(10),
+              child: Image.file(
+                File(mistake.imagePath!),
+                width: 44,
+                height: 44,
+                fit: BoxFit.cover,
+              ),
+            )
+          else
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.subtleOf(color),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(subject?.icon ?? Icons.school_outlined,
+                  color: color, size: 20),
             ),
-            child: Icon(subject?.icon ?? Icons.school_outlined,
-                color: color, size: 20),
-          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
