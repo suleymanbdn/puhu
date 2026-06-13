@@ -11,9 +11,13 @@ Puhu bir **YKS çalışma takip uygulamasından**, **yapay zeka destekli YKS ko�
   gerçekleri çıkarır; AI katmanı (`AiSummarizer` → Groq/Gemini) bunları kişisel,
   motive edici, eyleme dönük mesaja çevirir. *"Kural motoru ne söyleyeceğini bilir,
   AI nasıl söyleyeceğini bilir."*
-- **Seçilen yön (A):** Manuel veri girişi sürtünmesini öldür. Bunun için
-  **denemeyi fotoğrafla → otomatik net analizi** (AI sadece okur, çözmez → düşük risk).
-  Fotoğraftan **soru çözme** kırmızı okyanus + yüksek güven riski olduğu için **2. faza** atıldı.
+- **Farklılaşma:** Yapay zeka destekli koç (kural motoru + AI mesaj katmanı) +
+  birleşik tek uygulama deneyimi. Veri girişi manuel kalır (soru/deneme/net) — yeterli.
+- **GÜNCELLEME (2026-06-13):** "Denemeyi fotoğrafla → otomatik net" (eski Yön A / P2)
+  **iptal edildi.** Gerekçe: net hesabı için optik formdaki dolu baloncukları okumak gerekir;
+  AI vision bunu güvenilir yapamaz (120 baloncuk, açı/ışık/silik kalem → yanlış net → güven kaybı).
+  Manuel net girişi zaten çalışıyor ve yeterli. Fotoğraftan soru çözme de kırmızı okyanus +
+  yüksek risk olduğu için yapılmıyor.
 
 ### Pazar gerekçesi (araştırma bulgusu)
 
@@ -38,21 +42,23 @@ Puhu bir **YKS çalışma takip uygulamasından**, **yapay zeka destekli YKS ko�
 Tüm vizyon tek plana sığmaz. Bağımsız parçalara bölündü; her biri kendi spec→plan→uygulama
 döngüsünü alır.
 
-| # | Parça | Boyut | Risk | Bağımsız ship? |
+| # | Parça | Boyut | Risk | Durum |
 |---|---|---|---|---|
-| **P1** | Koçu uygulamanın yüzü yap (Anasayfa = koç, dashboard sadeleştir, AI notu bağla) | Küçük | Düşük | Evet |
-| **P2** | Denemeyi fotoğrafla → otomatik net analizi (AI vision → `MockExam.subjectNets`) | Orta-büyük | **Yüksek (AI doğruluk)** | Evet |
-| **P3** | "Puhu YKS" rebrand (app adı, mağaza metası, subtitle, logo notu, tescil) | Küçük | Düşük | Evet |
-| **P4** | *(sonra)* Fotoğraf-çöz — güven öncelikli, "emin değilim" diyebilen | — | Yüksek | — |
+| **P1** | Koçu uygulamanın yüzü yap (Anasayfa = koç, dashboard sadeleştir, AI notu bağla) | Küçük | Düşük | ✅ Tamam |
+| **P3** | "Puhu YKS" rebrand (app adı, subtitle) | Küçük | Düşük | ✅ Tamam |
+| **P2** | ~~Denemeyi fotoğrafla → otomatik net analizi~~ | — | Yüksek | ❌ **İptal** |
+| **P4** | ~~Fotoğraf-çöz~~ | — | Yüksek | ❌ **İptal** |
 
-**Karar — sıra:** **P1 → P3 → P2 → P4.**
+**Karar — sıra:** **P1 → P3 yapıldı. P2 ve P4 iptal edildi (2026-06-13).**
 
-Gerekçe (P2'yi öne almak yerine): P1 düşük riskli, var olan `CoachView`/`coachReportProvider`'ı
-kullanır, anında görünür değer üretir ve uygulamayı bugün iyileştirir. P2 ürünün asıl farkı ama
-**en riskli bilinmeyeni** — AI'ın Türkçe optik/cevap kâğıdını güvenilir okuyup okuyamayacağı.
-P2'ye tam plan yazmadan önce **gerçek bir optik fotoğrafıyla fizibilite testi (spike)** yapılmalı.
-Bu doğrulanmadan P2 build'ine girmek riskli. → **Kullanıcıdan gerçek deneme optik/cevap kâğıdı
-örneği gerekiyor (DANIŞMA NOKTASI).** P3 küçük olduğu için P2 spike'ı beklerken araya alınır.
+P2/P4 iptal gerekçesi: AI vision'ın optik form / soru fotoğrafını güvenilir okuyamaması →
+yanlış sonuç → güven kaybı riski. Manuel veri girişi zaten yeterli. Ürünün farkı **AI koç**
+(P1'de öne çıkarıldı), ek riskli özelliklere gerek yok.
+
+Bu oturumda ayrıca yapılan ek iyileştirmeler (yol haritası dışı, kullanıcı talebiyle):
+ölü kod temizliği (tasks/whats_new/calendar, ~2800 satır), eksi net düzeltmesi, Puhu+
+sadeleştirme + haftalık plan Plus kilidi + AI strateji notu, koç ekranı redesign,
+pomodoro dayatmasının kaldırılması (çalışma yolu seçimi).
 
 ## 4. P1 — Koçu Anasayfa yap (bu spec'in uygulanabilir kısmı)
 
@@ -91,6 +97,7 @@ baloncuğunu kaldır, hata/promo'yu aşağı it. `CoachView` tam detay sayfası 
 - Simülatörde Anasayfa: şerit + AI notu (veya fallback) + bugün hero + hızlı eylemler görünür,
   kalabalık dağılmış. `flutter analyze` temiz. AI tier yokken fallback düzgün çalışır.
 
-## 5. Açık danışma noktaları
-- **P2 öncesi:** Gerçek deneme optik/cevap kâğıdı fotoğrafı örneği (AI vision fizibilitesi için).
-- **P3:** Marka tescili kullanıcı kararı (vekil/maliyet).
+## 5. Yayın öncesi kullanıcı işleri (kodla bitmez)
+- **TestFlight:** Premium (Puhu+) akışını sandbox hesapla doğrula (haftalık plan açılıyor mu, AI notu geliyor mu).
+- **Mağaza metası:** App Store Connect + Play Console → ad "Puhu YKS", alt başlık "Yapay Zeka YKS Koçun".
+- **Marka tescili (opsiyonel):** "Puhu" — eğitim sınıfları 9/41/42, marka vekiliyle.
