@@ -4,9 +4,11 @@ import '../../exam/providers/exam_profile_provider.dart';
 import '../../mistakes/providers/mistake_provider.dart';
 import '../../questions/providers/question_log_provider.dart';
 import '../../streak/providers/streak_provider.dart';
+import '../../subjects/models/subject.dart';
 import '../../subjects/providers/topic_provider.dart';
 import '../models/study_plan.dart';
 import '../services/algorithmic_coach.dart';
+import 'ai_provider.dart';
 
 /// Algoritmik koç raporu — tüm veri sağlayıcıları değiştikçe yeniden hesaplanır.
 final coachReportProvider = Provider<CoachReport?>((ref) {
@@ -30,4 +32,37 @@ final coachReportProvider = Provider<CoachReport?>((ref) {
 /// Bugünkü öneri (hero kart için kısayol).
 final todayRecommendationProvider = Provider<TodayRecommendation?>((ref) {
   return ref.watch(coachReportProvider)?.todayRecommendation;
+});
+
+/// Anasayfa için otomatik AI koç notu.
+///
+/// Koç raporundaki gerçekleri AI'a verip 2-3 cümlelik günlük mesaja çevirir.
+/// Bağlam günlük olarak sabit tutulur (tarz parametresi sabit) → `GroqSummarizer`
+/// cache'i sayesinde günde ~1 gerçek API çağrısı yapılır, gerisi cache'ten gelir;
+/// rate limit tüketilmez. AI sağlayıcı yoksa/çevrimdışıysa `null` döner → UI
+/// fallback (selam/öneri başlığı) gösterir.
+final coachNoteProvider = FutureProvider<String?>((ref) async {
+  final report = ref.watch(coachReportProvider);
+  if (report == null) return null;
+
+  final summarizer = ref.watch(aiSummarizerProvider);
+  if (!summarizer.isAvailable) return null;
+
+  String titleOf(String id) {
+    for (final s in Subject.values) {
+      if (s.id == id) return s.title;
+    }
+    return id;
+  }
+
+  final weakest = report.weakestSubjectIds.map(titleOf).join(', ');
+  final strongest = report.strongestSubjectIds.map(titleOf).join(', ');
+  final context = '''
+En zayıf 3 ders: $weakest.
+En güçlü 3 ders: $strongest.
+Bugünkü öneri: ${report.todayRecommendation.title}.
+İstenen tarz: motive edici günlük durum özeti
+''';
+
+  return summarizer.generateCoachNote(context);
 });

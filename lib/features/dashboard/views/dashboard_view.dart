@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
 import '../../../core/services/feature_gate.dart';
 import '../../../core/services/purchase_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/quick_log_sheet.dart';
+import '../../coach/models/study_plan.dart';
 import '../../coach/providers/coach_provider.dart';
+import '../../exam/models/exam_profile.dart';
 import '../../exam/providers/exam_profile_provider.dart';
 import '../../mistakes/providers/mistake_provider.dart';
 import '../../questions/providers/question_log_provider.dart';
@@ -19,7 +20,11 @@ import '../../../shared/widgets/puhu_avatar.dart';
 import '../../../shared/widgets/speech_bubble.dart';
 import '../../whats_new/views/whats_new_sheet.dart';
 
-/// Anasayfa
+/// Anasayfa — koç merkezli.
+///
+/// Üstte ince durum şeridi (geri sayım + streak), ardından AI koç notu ve
+/// bugünkü öneri hero'su. Detaylı istatistik/ikincil kartlar aşağıda. Amaç:
+/// öğrenci açınca "şimdi ne yapayım" sorusuna tek net cevap görsün.
 class DashboardView extends ConsumerWidget {
   const DashboardView({super.key});
 
@@ -70,98 +75,56 @@ class DashboardView extends ConsumerWidget {
         padding: EdgeInsets.fromLTRB(
             16, 8, 16, 140 + MediaQuery.of(context).padding.bottom),
         children: [
-          // Sınav countdown — büyük gradient kart (ekranın imza kartı)
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  profile.examType.color,
-                  profile.examType.color.withAlpha(150),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(profile.examType.icon, color: Colors.white, size: 28),
-                    const SizedBox(width: 8),
-                    Text(
-                      profile.examType.title,
-                      style: textTheme.titleMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
+          // İnce üst şerit: geri sayım + streak (ikincil bilgi).
+          _TopStrip(profile: profile, streak: streak),
+          const SizedBox(height: 14),
+
+          // AI koç notu — uygulamanın yüzü (maskot + kişisel mesaj).
+          const _CoachNoteCard(),
+          const SizedBox(height: 14),
+
+          // Bugünkü öneri hero — günün tek net işi.
+          const _TodayHeroCard(),
+          const SizedBox(height: 12),
+
+          // Dünü kurtar (freeze) — yalnızca anlamlıysa.
+          if (streak.canFreezeYesterday) ...[
+            _FreezeCtaCard(streak: streak),
+            const SizedBox(height: 12),
+          ],
+
+          // Hızlı eylemler: soru ekle + haftalık plan.
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: () => showQuickLogSheet(context),
+                  icon: const Icon(Icons.add_chart_rounded),
+                  label: const Text('Soru Ekle'),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      '${profile.daysUntilExam}',
-                      style: textTheme.displayLarge?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        height: 1,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Text(
-                        'gün kaldı',
-                        style: textTheme.titleMedium?.copyWith(
-                          color: Colors.white.withAlpha(220),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  DateFormat('d MMMM yyyy, EEEE', 'tr_TR')
-                      .format(profile.examDate),
-                  style: textTheme.bodySmall?.copyWith(
-                    color: Colors.white.withAlpha(220),
                   ),
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // === ÜST FOLD: Streak hero (ana metrik) ===
-          _StreakHero(streak: streak),
-          const SizedBox(height: 12),
-
-          // Birincil eylem — günün ana işi: soru kaydetmek.
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: () => showQuickLogSheet(context),
-              icon: const Icon(Icons.add_chart_rounded),
-              label: const Text('Soru Ekle'),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                textStyle: textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w700),
               ),
-            ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: FilledButton.tonalIcon(
+                  onPressed: () => context.push('/coach'),
+                  icon: const Icon(Icons.calendar_month_rounded),
+                  label: const Text('Haftalık plan'),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
-
-          // Koç bugün önerisi — ince satır
-          const _CoachTodayCard(),
           const SizedBox(height: 24),
 
           // === Bugün — tek kart: hedef + soru/net (eşit iki sütun) ===
@@ -201,8 +164,7 @@ class DashboardView extends ConsumerWidget {
                         child: LinearProgressIndicator(
                           value: dailyProgress,
                           minHeight: 6,
-                          backgroundColor:
-                              colorScheme.primary.withAlpha(30),
+                          backgroundColor: colorScheme.primary.withAlpha(30),
                           color: dailyProgress >= 1.0
                               ? AppColors.success
                               : colorScheme.primary,
@@ -255,8 +217,6 @@ class DashboardView extends ConsumerWidget {
 
           // Hata Sepeti tanıtım / bekleyen sayısı
           const _MistakeBucketCard(),
-          const SizedBox(height: 24),
-
 
           // Puhu+ tanıtım kartı — yalnızca trigger anlarında (her zaman değil)
           if (!isPremium) ...[
@@ -274,6 +234,364 @@ class DashboardView extends ConsumerWidget {
               );
             }),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+/// İnce üst şerit — geri sayım + streak'i kompakt iki çip olarak gösterir.
+///
+/// Eski tasarımda bunlar ekranın yarısını kaplayan iki büyük karttı; koç
+/// merkezli düzende ikincil bilgiye indirgendiler.
+class _TopStrip extends StatelessWidget {
+  const _TopStrip({required this.profile, required this.streak});
+
+  final ExamProfile profile;
+  final StreakStats streak;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+    final examColor = profile.examType.color;
+    final streakColor =
+        streak.studiedToday ? AppColors.streak : AppColors.streakInactive;
+
+    Widget chip({
+      required IconData icon,
+      required Color color,
+      required String value,
+      required String label,
+    }) {
+      return Expanded(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: AppColors.subtleOf(color),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.softOf(color), width: 1),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: color, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      value,
+                      style: textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.strongOf(color),
+                      ),
+                    ),
+                    Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.labelSmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Row(
+      children: [
+        chip(
+          icon: profile.examType.icon,
+          color: examColor,
+          value: '${profile.daysUntilExam} gün',
+          label: '${profile.examType.title} • sınava kaldı',
+        ),
+        const SizedBox(width: 10),
+        chip(
+          icon: streak.studiedToday
+              ? Icons.local_fire_department
+              : Icons.local_fire_department_outlined,
+          color: streakColor,
+          value: '${streak.currentStreak} gün',
+          label: streak.studiedToday ? 'streak • bugün ✓' : 'streak',
+        ),
+      ],
+    );
+  }
+}
+
+/// AI koç notu kartı — maskot + kişisel günlük mesaj.
+///
+/// [coachNoteProvider] AI metnini üretir (günde ~1 gerçek çağrı, cache'li).
+/// AI yoksa/yüklenirken bugünkü öneri başlığına düşer. Tap → /coach detay.
+class _CoachNoteCard extends ConsumerWidget {
+  const _CoachNoteCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final noteAsync = ref.watch(coachNoteProvider);
+
+    // AI notu yokken hero'daki öneriyi tekrarlamamak için ona yönlendiren
+    // nötr bir selam göster.
+    const fallback = 'Bugünün planını senin için çıkardım — aşağıda 👇';
+    final note = noteAsync.asData?.value;
+    final hasNote = note != null && note.isNotEmpty;
+    final text = hasNote ? note : fallback;
+
+    return Material(
+      color: colorScheme.surface,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: () => context.push('/coach'),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(10, 14, 12, 14),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const PuhuAvatar(size: 76),
+              const SizedBox(width: 4),
+              Expanded(
+                child: SpeechBubble(
+                  text: text,
+                  animate: hasNote,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Color _recColor(RecommendationKind kind) {
+  switch (kind) {
+    case RecommendationKind.reviewMistakes:
+      return AppColors.danger;
+    case RecommendationKind.startStreak:
+      return AppColors.streak;
+    case RecommendationKind.focusWeakest:
+      return AppColors.focus;
+    case RecommendationKind.maintain:
+      return AppColors.success;
+  }
+}
+
+IconData _recIcon(RecommendationKind kind) {
+  switch (kind) {
+    case RecommendationKind.reviewMistakes:
+      return Icons.replay_circle_filled_rounded;
+    case RecommendationKind.startStreak:
+      return Icons.local_fire_department_rounded;
+    case RecommendationKind.focusWeakest:
+      return Icons.center_focus_strong_rounded;
+    case RecommendationKind.maintain:
+      return Icons.verified_rounded;
+  }
+}
+
+/// Bugünkü öneri hero'su — günün tek net işi + Başla butonu.
+class _TodayHeroCard extends ConsumerWidget {
+  const _TodayHeroCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final textTheme = Theme.of(context).textTheme;
+    final rec = ref.watch(todayRecommendationProvider);
+
+    // Rapor henüz hazır değilse basit bir başlangıç çağrısı göster.
+    if (rec == null) {
+      return SizedBox(
+        width: double.infinity,
+        child: FilledButton.icon(
+          onPressed: () => context.go('/timer'),
+          icon: const Icon(Icons.play_arrow_rounded),
+          label: const Text('Bugün çalışmaya başla'),
+          style: FilledButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            textStyle:
+                textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+          ),
+        ),
+      );
+    }
+
+    final color = _recColor(rec.kind);
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [color, color.withAlpha(180)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(60),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(_recIcon(rec.kind), color: Colors.white, size: 28),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'Bugün yap',
+                style: textTheme.labelMedium?.copyWith(
+                  color: Colors.white.withAlpha(220),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            rec.title,
+            style: textTheme.headlineSmall?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              height: 1.2,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            rec.subtitle,
+            style: textTheme.bodyMedium?.copyWith(
+              color: Colors.white.withAlpha(230),
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              icon: Icon(
+                rec.mistakeReview
+                    ? Icons.replay_rounded
+                    : Icons.play_arrow_rounded,
+                color: color,
+              ),
+              label: Text(
+                rec.minutes > 0 ? '${rec.minutes} dk başla' : 'Devam et',
+                style: TextStyle(color: color, fontWeight: FontWeight.w800),
+              ),
+              // Tab-shell route'larına (/timer, /home) push YAPILMAZ —
+              // Navigator key çakışmasıyla crash olur; go ile geçilir.
+              onPressed: () => GoRouter.of(context).go(rec.actionRoute),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// "Dünü kurtar" freeze CTA — streak kaçtıysa kurtarma kartı.
+///
+/// Eski [_StreakHero]'dan çıkarıldı: streak artık üst şeritte kompakt çip,
+/// ama freeze (donma) ile dünü kurtarma işlevi retention için korundu.
+class _FreezeCtaCard extends ConsumerWidget {
+  const _FreezeCtaCard({required this.streak});
+  final StreakStats streak;
+
+  Future<void> _useFreeze(BuildContext context, WidgetRef ref) async {
+    final isPremium = ref.read(isPremiumProvider);
+    final yesterday = DateTime.now().subtract(const Duration(days: 1));
+    final ok = await ref
+        .read(streakFreezeProvider.notifier)
+        .freezeDay(yesterday, isPremium: isPremium);
+    if (!context.mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    if (ok) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.shield_rounded, color: Colors.white),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Streak korundu — ${streak.streakIfYesterdayFrozen} güne yükseldi',
+                ),
+              ),
+            ],
+          ),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      HapticFeedback.mediumImpact();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final textTheme = Theme.of(context).textTheme;
+    final remainingFreeze = ref.watch(remainingFreezeTokensProvider);
+    final maxFreeze = ref.watch(maxFreezeTokensProvider);
+    final hasFreezeToken = remainingFreeze > 0;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.softOf(AppColors.focus)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.shield_outlined,
+                  color: AppColors.focus, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  hasFreezeToken
+                      ? 'Dünü kurtar → streak\'i ${streak.streakIfYesterdayFrozen} güne yükselt'
+                      : 'Dün kaçtı — ama bugün yeni bir başlangıç 💪',
+                  style: textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: hasFreezeToken
+                ? FilledButton.tonalIcon(
+                    icon: const Icon(Icons.shield_rounded),
+                    label: Text('Freeze kullan (kalan: '
+                        '${remainingFreeze - 1}/$maxFreeze)'),
+                    onPressed: () => _useFreeze(context, ref),
+                  )
+                : FilledButton.tonalIcon(
+                    icon: const Icon(Icons.timer_outlined),
+                    label: const Text('15 dk çalış — bugünü kazan'),
+                    onPressed: () => context.go('/timer'),
+                  ),
+          ),
         ],
       ),
     );
@@ -385,231 +703,6 @@ class _PremiumPromoCard extends StatelessWidget {
   }
 }
 
-/// Anasayfa "ana metrik" — streak'i hero olarak gösterir.
-///
-/// Tasarım kararı: streak YKS öğrencisi için günlük temasın motorudur;
-/// üst fold'da tek satır, tam genişlik, büyük rakam + ateş ikonu +
-/// Streak Freeze etkileşimleri (sağ üstte kalan token, dün kurtarma CTA).
-class _StreakHero extends ConsumerWidget {
-  const _StreakHero({required this.streak});
-  final StreakStats streak;
-
-  Future<void> _useFreeze(BuildContext context, WidgetRef ref) async {
-    final isPremium = ref.read(isPremiumProvider);
-    final yesterday =
-        DateTime.now().subtract(const Duration(days: 1));
-    final ok = await ref
-        .read(streakFreezeProvider.notifier)
-        .freezeDay(yesterday, isPremium: isPremium);
-    if (!context.mounted) return;
-    final messenger = ScaffoldMessenger.of(context);
-    if (ok) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.shield_rounded, color: Colors.white),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Streak korundu — ${streak.streakIfYesterdayFrozen} güne yükseldi',
-                ),
-              ),
-            ],
-          ),
-          duration: const Duration(seconds: 3),
-        ),
-      );
-      HapticFeedback.mediumImpact();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final textTheme = Theme.of(context).textTheme;
-    final remainingFreeze = ref.watch(remainingFreezeTokensProvider);
-    final maxFreeze = ref.watch(maxFreezeTokensProvider);
-
-    final color = streak.studiedToday
-        ? AppColors.streak
-        : AppColors.streakInactive;
-    final subtitle = streak.studiedToday
-        ? 'Bugün çalıştın — devam et!'
-        : (streak.currentStreak > 0
-            ? '15 dakika yeter — serin bugün de sürsün ✨'
-            : 'Bugün küçük bir adım at — yeni seri başlasın 💪');
-
-    final showFreezeCta = streak.canFreezeYesterday;
-    final hasFreezeToken = remainingFreeze > 0;
-
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AppColors.subtleOf(color),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.softOf(color), width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.softOf(color),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  streak.studiedToday
-                      ? Icons.local_fire_department
-                      : Icons.local_fire_department_outlined,
-                  color: color,
-                  size: 32,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          streak.currentStreak.toString(),
-                          style: textTheme.displaySmall?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            color: color,
-                            height: 1,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 6),
-                          child: Text(
-                            'gün streak',
-                            style: textTheme.bodyMedium?.copyWith(
-                              color: color,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: textTheme.bodySmall?.copyWith(
-                        color: AppColors.strongOf(color),
-                      ),
-                    ),
-                    if (streak.longestStreak > streak.currentStreak) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        'En uzun: ${streak.longestStreak} gün',
-                        style: textTheme.labelSmall?.copyWith(
-                          color: AppColors.mediumOf(color),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              // Freeze token rozeti — her zaman görünür (kullanıcı varlığını bilsin)
-              Tooltip(
-                message: 'Bu ay kalan streak freeze (donma): '
-                    '$remainingFreeze / $maxFreeze',
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppColors.softOf(AppColors.focus),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.shield_rounded,
-                          color: AppColors.focus, size: 16),
-                      const SizedBox(width: 4),
-                      Text(
-                        '$remainingFreeze',
-                        style: textTheme.labelMedium?.copyWith(
-                          color: AppColors.focus,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          // Dünü kurtar CTA — yalnızca anlamlıysa göster
-          if (showFreezeCta) ...[
-            const SizedBox(height: 14),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: AppColors.softOf(AppColors.focus),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.shield_outlined,
-                          color: AppColors.focus, size: 20),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          hasFreezeToken
-                              ? 'Dünü kurtar → streak\'i ${streak.streakIfYesterdayFrozen} güne yükselt'
-                              : 'Dün kaçtı — ama bugün yeni bir başlangıç 💪',
-                          style: textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    child: hasFreezeToken
-                        ? FilledButton.tonalIcon(
-                            icon: const Icon(Icons.shield_rounded),
-                            label: Text('Freeze kullan (kalan: '
-                                '${remainingFreeze - 1}/$maxFreeze)'),
-                            onPressed: () => _useFreeze(context, ref),
-                          )
-                        : FilledButton.tonalIcon(
-                            icon: const Icon(Icons.timer_outlined),
-                            label: const Text(
-                                '15 dk çalış — bugünü kazan'),
-                            onPressed: () => context.go('/timer'),
-                          ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-
-
-
-
 class _MistakeBucketCard extends ConsumerWidget {
   const _MistakeBucketCard();
 
@@ -680,64 +773,6 @@ class _MistakeBucketCard extends ConsumerWidget {
             Icon(Icons.chevron_right_rounded,
                 color: AppColors.strongOf(color)),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Anasayfada koç bugün önerisi kartı.
-///
-/// Algoritmik koç [todayRecommendationProvider]'dan gelen öneriyi gösterir;
-/// tap edince ya doğrudan aksiyon route'una gider (timer / mistake review
-/// vb.) ya da uzun basışla /coach detay sayfasına götürür.
-class _CoachTodayCard extends ConsumerWidget {
-  const _CoachTodayCard();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final rec = ref.watch(todayRecommendationProvider);
-    final textTheme = Theme.of(context).textTheme;
-    if (rec == null) {
-      return SizedBox(
-        width: double.infinity,
-        child: FilledButton.icon(
-          onPressed: () => context.go('/timer'),
-          icon: const Icon(Icons.play_arrow_rounded),
-          label: const Text('Bugün çalışmaya başla'),
-          style: FilledButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            textStyle: textTheme.titleMedium
-                ?.copyWith(fontWeight: FontWeight.w700),
-          ),
-        ),
-      );
-    }
-
-    final colorScheme = Theme.of(context).colorScheme;
-    // Puhu maskotu önerisini konuşma balonuyla söyler — AI asistan
-    // uygulamanın görünür yüzü (Duolingo'nun Duo'su gibi).
-    return Material(
-      color: colorScheme.surface,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () => context.push('/coach'),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(10, 12, 12, 12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const PuhuAvatar(size: 64),
-              const SizedBox(width: 4),
-              Expanded(
-                child: SpeechBubble(
-                  text: rec.title,
-                  animate: false,
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );
