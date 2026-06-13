@@ -56,3 +56,6 @@ app.*.map.json
 .secrets/
 *.secrets.env
 .superpowers/
+
+# Mağaza ekran görüntüleri — diskte tutulur, git'e girmez
+store_assets/
