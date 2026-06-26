@@ -268,11 +268,16 @@ class _NetTrendCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final maxY = spots.map((s) => s.y).fold<double>(
-          targetNet ?? 0,
-          (a, b) => a > b ? a : b,
-        );
-    final yMax = (maxY * 1.15).ceilToDouble().clamp(10, 600).toDouble();
+    // Net eksi olabilir (doğru - yanlış/4) → grafik alt sınırını veriye göre
+    // hesapla, 0'a sabitleme (yoksa eksi net'ler kırpılır).
+    final ys = spots.map((s) => s.y).toList();
+    final dataMax = ys.isEmpty ? 0.0 : ys.reduce((a, b) => a > b ? a : b);
+    final dataMin = ys.isEmpty ? 0.0 : ys.reduce((a, b) => a < b ? a : b);
+    final upper = [dataMax, targetNet ?? 0.0].reduce((a, b) => a > b ? a : b);
+    final lower =
+        [dataMin, targetNet ?? 0.0, 0.0].reduce((a, b) => a < b ? a : b);
+    final yMax = (upper * 1.15).ceilToDouble().clamp(10, 600).toDouble();
+    final yMin = lower < 0 ? (lower * 1.15).floorToDouble() : 0.0;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -291,7 +296,7 @@ class _NetTrendCard extends StatelessWidget {
             aspectRatio: 2,
             child: LineChart(
               LineChartData(
-                minY: 0,
+                minY: yMin,
                 maxY: yMax,
                 titlesData: const FlTitlesData(show: false),
                 gridData: const FlGridData(show: false),

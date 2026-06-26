@@ -132,14 +132,14 @@ class FocusTimerNotifier extends StateNotifier<FocusTimerState> {
 
   void _handleAutoFlow() {
     final settings = ref.read(settingsProvider);
-    if (settings.autoFlow) {
-      if (state.focusType == FocusType.work) {
-        setFocusType(FocusType.shortBreak);
-        start();
-      } else {
-        setFocusType(FocusType.work);
-        start();
-      }
+    if (!settings.autoFlow) return;
+    // ÇALIŞMA bitince otomatik mola BAŞLATMA: önce tamamlama dialogu açılıp
+    // oturum (subjectId dahil) kaydedilmeli. setFocusType state'i sıfırladığı
+    // için burada başlatmak subjectId'yi kaybettirir → oturum yanlış kaydedilir.
+    // Yalnızca MOLA bitince otomatik çalışmaya dön.
+    if (state.focusType != FocusType.work) {
+      setFocusType(FocusType.work);
+      start();
     }
   }
 

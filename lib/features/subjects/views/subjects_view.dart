@@ -177,33 +177,38 @@ class _SubjectCard extends ConsumerWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                // Stat satırı
-                Row(
-                  children: [
-                    _Stat(
-                      icon: Icons.access_time,
-                      label: _formatHours(totalMinutes),
-                      sub: 'çalışıldı',
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 16),
-                    _Stat(
-                      icon: Icons.flag_outlined,
-                      label: '${(budgetMinutes / 60).toStringAsFixed(1)}sa',
-                      sub: 'haftalık',
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    const Spacer(),
-                    if (totalNet > 0)
-                      _Stat(
-                        icon: Icons.show_chart,
-                        label: totalNet.toStringAsFixed(1),
-                        sub: 'net',
-                        color: const Color(0xFF10B981),
-                      ),
-                  ],
-                ),
+                // Stat satırı — yalnızca anlamlı veri varsa (0 değerleri gizle).
+                if (totalMinutes > 0 || budgetMinutes > 0 || totalNet > 0) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      if (totalMinutes > 0) ...[
+                        _Stat(
+                          icon: Icons.access_time,
+                          label: _formatHours(totalMinutes),
+                          sub: 'çalışıldı',
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 16),
+                      ],
+                      if (budgetMinutes > 0)
+                        _Stat(
+                          icon: Icons.flag_outlined,
+                          label: '${(budgetMinutes / 60).toStringAsFixed(1)}sa',
+                          sub: 'haftalık',
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      const Spacer(),
+                      if (totalNet > 0)
+                        _Stat(
+                          icon: Icons.show_chart,
+                          label: totalNet.toStringAsFixed(1),
+                          sub: 'net',
+                          color: const Color(0xFF10B981),
+                        ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),

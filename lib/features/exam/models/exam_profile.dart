@@ -134,12 +134,13 @@ class ExamProfile extends HiveObject {
   })  : createdAt = createdAt ?? DateTime.now(),
         updatedAt = updatedAt ?? DateTime.now();
 
-  /// Sınava kalan gün sayısı
+  /// Sınava kalan gün sayısı (0'ın altına inmez — sınav geçtiyse 0).
   int get daysUntilExam {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final exam = DateTime(examDate.year, examDate.month, examDate.day);
-    return exam.difference(today).inDays;
+    final diff = exam.difference(today).inDays;
+    return diff < 0 ? 0 : diff;
   }
 
   /// Haftalık çalışma hedefi (saat)

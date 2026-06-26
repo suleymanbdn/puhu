@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../models/focus_session.dart';
 import '../providers/focus_provider.dart';
 import '../widgets/focus_completion_dialog.dart';
 
+import '../widgets/timer_category_selector.dart';
 import '../widgets/timer_controls.dart';
 import '../widgets/timer_display.dart';
 import '../widgets/timer_mode_selector.dart';
@@ -39,16 +41,24 @@ class _TimerViewState extends ConsumerState<TimerView>
     super.dispose();
   }
 
-  void _onStateChange(FocusTimerState state) {
-    if (state.status == TimerStatus.running) {
+  void _onStateChange(FocusTimerState? prev, FocusTimerState next) {
+    if (next.status == TimerStatus.running) {
       if (!_pulseController.isAnimating) _pulseController.repeat(reverse: true);
     } else {
       _pulseController
         ..stop()
         ..reset();
     }
-    if (state.status == TimerStatus.completed) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _showDialog(state));
+    // Tamamlama dialogu yalnızca ÇALIŞMA oturumu tamamlandığında ve bu geçiş
+    // BİR KEZ yaşandığında açılır (mola tamamlanınca dialog yok). Mükerrer
+    // dialog ve mola/çalışma yarışı böyle önlenir.
+    final justCompletedWork = prev?.status != TimerStatus.completed &&
+        next.status == TimerStatus.completed &&
+        next.focusType == FocusType.work;
+    if (justCompletedWork) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _showDialog(next);
+      });
     }
   }
 
@@ -67,7 +77,8 @@ class _TimerViewState extends ConsumerState<TimerView>
     final timerState = ref.watch(focusTimerProvider);
     final todayStats = ref.watch(todayFocusStatsProvider);
 
-    ref.listen<FocusTimerState>(focusTimerProvider, (_, next) => _onStateChange(next));
+    ref.listen<FocusTimerState>(
+        focusTimerProvider, (prev, next) => _onStateChange(prev, next));
 
     return Scaffold(
       backgroundColor: timerState.status == TimerStatus.running
@@ -113,6 +124,12 @@ class _TimerViewState extends ConsumerState<TimerView>
               // Mod seçimi
               const TimerModeSelector(),
 
+              // Çalışma modunda ders/konu seçimi — oturum derse bağlansın.
+              if (timerState.focusType == FocusType.work) ...[
+                const SizedBox(height: 16),
+                const TimerCategorySelector(),
+              ],
+
               const Spacer(),
 
               // Zamanlayıcı
@@ -123,12 +140,12 @@ class _TimerViewState extends ConsumerState<TimerView>
 
               const Spacer(),
 
-
-
               // Kontrol butonları
               TimerControls(timerState: timerState),
 
-              const SizedBox(height: 16),
+              // Yüzen cam nav bar'ın (≈92px) arkasında kalmasın (SafeArea zaten
+              // home-indicator inset'ini ekliyor).
+              const SizedBox(height: 100),
             ],
           ),
         ),
