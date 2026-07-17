@@ -244,7 +244,9 @@ class _OnboardingViewState extends ConsumerState<OnboardingView> {
                   ?.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Text(
-            'YKS yolculuğunda yanındayım. Hangi alanda hazırlanıyorsun?',
+            'Yapay zeka koçunum. Sana özel çalışma önerileri, zayıf konu '
+            'analizi ve haftalık plan için önce birkaç şeyi tanıyayım — '
+            'hangi alanda hazırlanıyorsun?',
             style: textTheme.bodyLarge
                 ?.copyWith(color: colorScheme.onSurfaceVariant),
           ),
