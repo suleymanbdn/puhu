@@ -130,8 +130,9 @@ class PurchaseNotifier extends Notifier<PurchaseState> {
     if (!RevenueCatConfig.isConfigured) return false;
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final info = await Purchases.purchasePackage(package);
-      final premium = _hasPremium(info);
+      // SDK 10.x: purchasePackage yerine purchase(PurchaseParams).
+      final result = await Purchases.purchase(PurchaseParams.package(package));
+      final premium = _hasPremium(result.customerInfo);
       state = state.copyWith(isPremium: premium, isLoading: false);
       return premium;
     } on PlatformException catch (e) {
