@@ -1,7 +1,7 @@
 name: puhu
 description: "Puhu — YKS çalışma asistanın. Konu takibi, soru çözüm, deneme analizi, akıllı tekrar."
 publish_to: 'none'
-version: 1.2.0+3
+version: 1.2.0+110
 
 environment:
   sdk: ^3.5.0
@@ -42,7 +42,7 @@ dependencies:
   path_provider: ^2.1.4
 
   # In-App Purchases - RevenueCat
-  purchases_flutter: ^8.11.0
+  purchases_flutter: ^10.4.2
 
 dev_dependencies:
   flutter_test:
