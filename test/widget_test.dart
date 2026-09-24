@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test('Uygulama sabitleri tanımlı', () {
-    expect(AppConstants.appName, 'Puhu');
+    expect(AppConstants.appName, 'Puhu YKS');
     expect(AppConstants.androidApplicationId, 'com.zamanyonetimi.app');
   });
 
